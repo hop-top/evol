@@ -10,6 +10,8 @@ golangci-lint = "2.12.2"
 
 [env]
 CGO_ENABLED = "0"
+# bare-worktree checkouts fail VCS stamping; releases stamp via goreleaser
+GOFLAGS = "-buildvcs=false"
 
 [tasks.install]
 description = "Download module dependencies"
