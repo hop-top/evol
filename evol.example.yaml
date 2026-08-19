@@ -1,0 +1,46 @@
+# evol loop configuration — copy to evol.yaml and bind your adapters.
+#
+# Every port is an external executable spoken to over stdio (see spec/).
+# cmd is an argv array; the engine appends nothing — flags belong here.
+
+# Default artifact to evolve; `evol run --artifact <ref>` overrides.
+artifact: skills/commit-style
+
+ports:
+  artifactstore:
+    cmd: [evol-adapter-fs-artifact]
+    timeout_seconds: 30
+  generator:
+    cmd: [evol-adapter-generator-llm]
+    timeout_seconds: 300
+  executor:
+    cmd: [evol-adapter-executor]
+    timeout_seconds: 600
+  corpus:
+    cmd: [evol-adapter-corpus]
+    timeout_seconds: 30
+  # Engine-level draft contract until a Scorer port is extracted —
+  # see docs/scorer-draft.md.
+  scorer:
+    cmd: [evol-adapter-scorer]
+    timeout_seconds: 120
+  # Optional: leave cmd out (or empty) to run without a knowledge base.
+  knowledgebase:
+    cmd: [evol-adapter-kb]
+    timeout_seconds: 30
+
+thresholds:
+  # Candidate holdout mean must reach baseline + delta to be promoted.
+  delta: 0.05
+  # Runs per case; scores average across trials.
+  trials: 1
+
+budget:
+  generations: 3
+  max_candidates: 3
+
+# Corpus split used for gating.
+holdout: holdout
+
+# env.mode hint sent to the executor: replay | record | live.
+executor_mode: replay
