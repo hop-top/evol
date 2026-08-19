@@ -1,0 +1,16 @@
+# mise configuration for evol
+# Install tools: mise install
+# Docs: https://mise.jdx.dev
+
+[tools]
+go = "1.26.6"
+# Pin minor version so local + CI agree on enabled linters and
+# formatter rules. Bump in lockstep with CI.
+golangci-lint = "2.12.2"
+
+[env]
+CGO_ENABLED = "0"
+
+[tasks.install]
+description = "Download module dependencies"
+run = "go mod download"
