@@ -81,6 +81,12 @@ const (
 	VerdictFailed   = "failed"
 )
 
+// Fixtures pins the recorded environment behind a promoted run so it
+// can serve as a regression fixture (optional; see spec/port-corpus.md).
+type Fixtures struct {
+	CassetteDir string `json:"cassette_dir"`
+}
+
 // CandidateOutcome is one candidate's evaluated result within a
 // generation, shaped for Corpus record.
 type CandidateOutcome struct {
@@ -88,6 +94,7 @@ type CandidateOutcome struct {
 	Scores    []CaseScore `json:"scores"`
 	Verdict   string      `json:"verdict"`
 	Rationale string      `json:"rationale"`
+	Fixtures  *Fixtures   `json:"fixtures,omitempty"`
 }
 
 // Result is the outcome of one engine run.

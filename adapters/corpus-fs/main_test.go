@@ -115,6 +115,55 @@ func TestRecordCreatesDirAndAppends(t *testing.T) {
 	}
 }
 
+func TestRecordRoundTripsFixtures(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("EVOL_CORPUS_ROOT", root)
+
+	req := `{"evol":"1","port":"corpus","action":"record",` +
+		`"generation":{"artifact_ref":"` + ref + `","baseline_version":"v1","number":1},` +
+		`"candidates":[{"id":"cand-1","verdict":"accepted","rationale":"gate met",` +
+		`"fixtures":{"cassette_dir":".evol/cassettes"}}]}`
+	if _, err := call(t, req); err != nil {
+		t.Fatal(err)
+	}
+
+	dir, err := artifactDir(root, ref)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, generationsFile)) // #nosec G304 -- test temp dir
+	if err != nil {
+		t.Fatal(err)
+	}
+	line := strings.TrimSpace(string(data))
+	var got generationLine
+	if err := json.Unmarshal([]byte(line), &got); err != nil {
+		t.Fatalf("stored line not JSON: %v\n%s", err, line)
+	}
+	if !strings.Contains(string(got.Fixtures), `.evol/cassettes`) {
+		t.Errorf("fixtures did not round-trip: %s", line)
+	}
+
+	// A record without fixtures must not grow an empty field.
+	req = `{"evol":"1","port":"corpus","action":"record",` +
+		`"generation":{"artifact_ref":"` + ref + `","baseline_version":"v1","number":2},` +
+		`"candidates":[{"id":"cand-2","verdict":"rejected","rationale":"below gate"}]}`
+	if _, err := call(t, req); err != nil {
+		t.Fatal(err)
+	}
+	data, err = os.ReadFile(filepath.Join(dir, generationsFile)) // #nosec G304 -- test temp dir
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("want 2 stored lines, got %d", len(lines))
+	}
+	if strings.Contains(lines[1], "fixtures") {
+		t.Errorf("fixtures key must be omitted when absent: %s", lines[1])
+	}
+}
+
 func TestTabuReturnsRejectsAndFailsDeduped(t *testing.T) {
 	root := t.TempDir()
 	t.Setenv("EVOL_CORPUS_ROOT", root)

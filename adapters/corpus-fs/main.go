@@ -71,6 +71,9 @@ type candidateRecord struct {
 	Rationale string       `json:"rationale,omitempty"`
 	Strategy  string       `json:"strategy,omitempty"`
 	TS        string       `json:"ts,omitempty"`
+	// Fixtures round-trips verbatim (optional {cassette_dir} on
+	// promoted candidates; see spec/port-corpus.md).
+	Fixtures json.RawMessage `json:"fixtures,omitempty"`
 }
 
 // generationLine is one appended line in generations.jsonl: the

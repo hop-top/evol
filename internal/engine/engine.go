@@ -87,6 +87,15 @@ func (e *Engine) Run(ctx context.Context, artifactRef string) (*Result, error) {
 		return nil, err
 	}
 	cases := casesResp.Cases
+
+	// Human corrections are promoted into the gating pool. Failures
+	// degrade — older corpus adapters may not serve the action.
+	if corr := e.corrections(ctx, artifactRef); len(corr) > 0 {
+		before := len(cases)
+		cases = mergeCases(cases, corr, e.cfg.Holdout)
+		e.logf("corrections: merged %d of %d into the %q pool",
+			len(cases)-before, len(corr), e.cfg.Holdout)
+	}
 	if len(cases) == 0 {
 		return nil, fmt.Errorf("%w: no %q cases for %s", ErrGate, e.cfg.Holdout, artifactRef)
 	}
@@ -166,6 +175,11 @@ func (e *Engine) Run(ctx context.Context, artifactRef string) (*Result, error) {
 				if accepted == nil {
 					accepted = &candidates[i]
 					acceptedMean = candMean
+					// Pin the recorded environment for the promoted run
+					// so it can serve as a regression fixture.
+					if e.cfg.FixturesDir != "" {
+						outcome.Fixtures = &Fixtures{CassetteDir: e.cfg.FixturesDir}
+					}
 				}
 			default:
 				outcome.Verdict = VerdictRejected
@@ -263,6 +277,42 @@ func (e *Engine) evaluate(ctx context.Context, staging, id, frontmatter, body st
 		}
 	}
 	return scores, nil
+}
+
+// corrections fetches human-corrected cases from the Corpus. Any error
+// degrades to none — the action is newer than some adapters.
+func (e *Engine) corrections(ctx context.Context, artifactRef string) []Case {
+	var resp struct {
+		Cases []Case `json:"cases"`
+	}
+	if err := e.corpus.Call(ctx, "corrections",
+		map[string]any{"artifact_ref": artifactRef}, &resp); err != nil {
+		e.logf("corrections degraded: %v", err)
+		return nil
+	}
+	return resp.Cases
+}
+
+// mergeCases appends extras into base, deduping by case id and keeping
+// only entries whose split matches the gating split (empty split
+// entries are taken as-is).
+func mergeCases(base, extra []Case, split string) []Case {
+	seen := make(map[string]bool, len(base))
+	for _, c := range base {
+		seen[c.ID] = true
+	}
+	out := base
+	for _, c := range extra {
+		if c.Split != "" && c.Split != split {
+			continue
+		}
+		if c.ID == "" || seen[c.ID] {
+			continue
+		}
+		seen[c.ID] = true
+		out = append(out, c)
+	}
+	return out
 }
 
 func (e *Engine) tabu(ctx context.Context, artifactRef string) ([]TabuEntry, error) {

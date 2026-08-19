@@ -49,6 +49,27 @@ if port == "corpus":
         }]})
     if action == "tabu":
         reply({"entries": []})
+    if action == "corrections":
+        mode = os.environ.get("EVOL_FAKE_CORRECTIONS", "")
+        if mode == "error":
+            print("fake corpus: corrections exploded", file=sys.stderr)
+            sys.exit(3)
+        if mode == "ok":
+            reply({"cases": [
+                # duplicate id — engine must dedup against corpus cases
+                {"id": "case-1", "input": "do the thing",
+                 "expected": "the thing, done well",
+                 "split": "holdout", "source": "correction"},
+                # genuinely new holdout correction — must join the pool
+                {"id": "corr-1", "input": "do the corrected thing",
+                 "expected": "the corrected thing, done well",
+                 "split": "holdout", "source": "correction"},
+                # other-split correction — must be skipped for gating
+                {"id": "corr-train", "input": "train-only",
+                 "expected": "train-only", "split": "train",
+                 "source": "correction"},
+            ]})
+        reply({"cases": []})
     if action == "record":
         with open(os.path.join(out_dir, "record.jsonl"), "a", encoding="utf-8") as f:
             f.write(json.dumps(req) + "\n")

@@ -58,6 +58,7 @@ Request:
 | `candidates[].scores` | object[] | per-case or aggregate: `{case_id?, score, reason?}` |
 | `candidates[].verdict` | string | `accepted`, `rejected`, or `failed` |
 | `candidates[].rationale` | string | why — gate result, judge feedback, constraint hit |
+| `candidates[].fixtures` | object? | optional `{cassette_dir}` — recorded-environment location pinned with a promoted run, for regression replay (added while INTERNAL DRAFT) |
 
 Response: empty object (envelope only).
 

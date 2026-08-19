@@ -143,6 +143,101 @@ func TestKnowledgeBaseUnavailableDegrades(t *testing.T) {
 	}
 }
 
+// scoresPerCandidate returns the per-candidate score counts across all
+// recorded generations.
+func scoresPerCandidate(records []map[string]any) []int {
+	var out []int
+	for _, rec := range records {
+		cands, _ := rec["candidates"].([]any)
+		for _, c := range cands {
+			m, _ := c.(map[string]any)
+			scores, _ := m["scores"].([]any)
+			out = append(out, len(scores))
+		}
+	}
+	return out
+}
+
+func TestCorrectionsMergeIntoGatingPool(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("EVOL_TEST_DIR", dir)
+	t.Setenv("EVOL_FAKE_GOOD", "1")
+	t.Setenv("EVOL_FAKE_CORRECTIONS", "ok")
+
+	res, err := New(fakeConfig(t, false)).Run(context.Background(), "skills/fake")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if !res.Accepted {
+		t.Fatal("candidate should still be promoted with corrections merged")
+	}
+
+	// Pool = case-1 (golden) + corr-1 (correction). The duplicate
+	// case-1 correction is deduped; corr-train is the wrong split.
+	got := scoresPerCandidate(readRecords(t, dir))
+	if len(got) != 1 || got[0] != 2 {
+		t.Errorf("scores per candidate = %v, want [2] (golden + merged correction)", got)
+	}
+}
+
+func TestCorrectionsErrorDegrades(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("EVOL_TEST_DIR", dir)
+	t.Setenv("EVOL_FAKE_GOOD", "1")
+	t.Setenv("EVOL_FAKE_CORRECTIONS", "error")
+
+	res, err := New(fakeConfig(t, false)).Run(context.Background(), "skills/fake")
+	if err != nil {
+		t.Fatalf("Run must degrade when corrections action errors: %v", err)
+	}
+	if !res.Accepted {
+		t.Error("loop should still promote without corrections")
+	}
+	got := scoresPerCandidate(readRecords(t, dir))
+	if len(got) != 1 || got[0] != 1 {
+		t.Errorf("scores per candidate = %v, want [1] (golden case only)", got)
+	}
+}
+
+func TestAcceptedRecordCarriesFixtures(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("EVOL_TEST_DIR", dir)
+	t.Setenv("EVOL_FAKE_GOOD", "1")
+
+	cfg := fakeConfig(t, false)
+	cfg.FixturesDir = ".evol/cassettes"
+	if _, err := New(cfg).Run(context.Background(), "skills/fake"); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+
+	records := readRecords(t, dir)
+	cands, _ := records[len(records)-1]["candidates"].([]any)
+	m, _ := cands[0].(map[string]any)
+	fx, ok := m["fixtures"].(map[string]any)
+	if !ok {
+		t.Fatalf("accepted record carries no fixtures: %v", m)
+	}
+	if fx["cassette_dir"] != ".evol/cassettes" {
+		t.Errorf("fixtures.cassette_dir = %v, want .evol/cassettes", fx["cassette_dir"])
+	}
+}
+
+func TestFixturesOmittedWithoutConfig(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("EVOL_TEST_DIR", dir)
+	t.Setenv("EVOL_FAKE_GOOD", "1")
+
+	if _, err := New(fakeConfig(t, false)).Run(context.Background(), "skills/fake"); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	records := readRecords(t, dir)
+	cands, _ := records[len(records)-1]["candidates"].([]any)
+	m, _ := cands[0].(map[string]any)
+	if _, present := m["fixtures"]; present {
+		t.Errorf("fixtures must be omitted when fixtures_dir is unset: %v", m)
+	}
+}
+
 func TestConfigNormalize(t *testing.T) {
 	var cfg Config
 	if err := cfg.Normalize(); err == nil {

@@ -44,3 +44,8 @@ holdout: holdout
 
 # env.mode hint sent to the executor: replay | record | live.
 executor_mode: replay
+
+# Optional: recorded-environment location (e.g. the executor's cassette
+# root). When set, the promoted candidate's corpus record carries it as
+# fixtures.cassette_dir for regression replay.
+# fixtures_dir: .evol/cassettes

@@ -63,6 +63,12 @@ type Config struct {
 	// ExecutorMode is the env.mode hint sent to the Executor:
 	// replay, record, or live. Defaults to "replay".
 	ExecutorMode string `mapstructure:"executor_mode" json:"executor_mode"`
+
+	// FixturesDir, when set, is recorded with the promoted candidate's
+	// corpus entry as fixtures.cassette_dir — the operator-configured
+	// location of the recorded environment (adapter-agnostic; the
+	// engine never inspects it).
+	FixturesDir string `mapstructure:"fixtures_dir" json:"fixtures_dir,omitempty"`
 }
 
 // Normalize applies defaults and validates the parts the engine cannot
