@@ -39,6 +39,15 @@ ports:
     cmd: [evol-adapter-kb]
     timeout_seconds: 30
 
+# Optional: the run ledger (spec/port-audit.md). One entry per loop
+# run — outcome, metrics, one step per generation; read back with
+# `evol runs list` / `evol runs show <id>`. audit-tlc keeps the ledger
+# in the family tracker (project-scoped, next to task and flow
+# history); audit-fs is the zero-dependency JSONL fallback.
+#  audit:
+#    cmd: ["audit-tlc"]        # or ["audit-fs"] with EVOL_AUDIT_ROOT
+#    timeout_seconds: 30
+
 thresholds:
   # Candidate holdout mean must reach baseline + delta to be promoted.
   delta: 0.05
