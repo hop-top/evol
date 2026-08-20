@@ -40,6 +40,7 @@ type Engine struct {
 	scorer    *port.Client
 	kb        *port.Client
 	casegen   *port.Client
+	audit     *port.Client
 
 	// Log receives progress lines; defaults to io.Discard.
 	Log io.Writer
@@ -50,6 +51,10 @@ type Engine struct {
 
 	// sigWarned dedups the small-sample significance warning per run.
 	sigWarned bool
+
+	// steps accumulates the audit trail of the current run; reset by
+	// Run, emitted by emitAudit.
+	steps []AuditStep
 }
 
 // New builds an Engine from a normalized Config.
@@ -63,6 +68,7 @@ func New(cfg Config) *Engine {
 		scorer:    cfg.Ports.Scorer.client("scorer"),
 		kb:        cfg.Ports.KnowledgeBase.client("knowledgebase"),
 		casegen:   cfg.Ports.CaseGen.client("generator"),
+		audit:     cfg.Ports.Audit.client("audit"),
 		Log:       io.Discard,
 		Now:       time.Now,
 	}
@@ -72,8 +78,17 @@ func (e *Engine) logf(format string, args ...any) {
 	_, _ = fmt.Fprintf(e.Log, format+"\n", args...)
 }
 
-// Run executes the loop for one artifact ref.
+// Run executes the loop for one artifact ref, recording the run to the
+// Audit port (when configured) whatever the outcome.
 func (e *Engine) Run(ctx context.Context, artifactRef string) (*Result, error) {
+	started := e.Now().UTC()
+	e.steps = nil
+	res, err := e.runLoop(ctx, artifactRef)
+	e.emitAudit(ctx, artifactRef, started, res, err)
+	return res, err
+}
+
+func (e *Engine) runLoop(ctx context.Context, artifactRef string) (*Result, error) {
 	// 1. Load the artifact.
 	var loadResp struct {
 		Artifact Artifact `json:"artifact"`
@@ -128,6 +143,8 @@ func (e *Engine) Run(ctx context.Context, artifactRef string) (*Result, error) {
 	baselineMean := mean(baselineScores)
 	e.logf("baseline %s@%s: %.4f over %d case(s) × %d trial(s)",
 		artifact.Ref, artifact.Version, baselineMean, len(cases), e.cfg.Thresholds.Trials)
+	e.addStep("baseline", "ok", fmt.Sprintf("%.4f over %d case(s) × %d trial(s)",
+		baselineMean, len(cases), e.cfg.Thresholds.Trials))
 
 	if evidence, err := e.sweep(ctx, staging, "baseline", artifact.Frontmatter, artifact.Body, "", cases); err != nil {
 		return nil, err
@@ -165,12 +182,14 @@ func (e *Engine) Run(ctx context.Context, artifactRef string) (*Result, error) {
 			if err := e.record(ctx, artifact, gen, nil); err != nil {
 				return nil, err
 			}
+			e.addStep(fmt.Sprintf("generation-%d", gen), "dry", "no candidates proposed")
 			continue
 		}
 
 		outcomes := make([]CandidateOutcome, 0, len(candidates))
 		var accepted *Candidate
 		var acceptedMean float64
+		var genBest float64
 
 		for i := range candidates {
 			cand := candidates[i]
@@ -183,6 +202,9 @@ func (e *Engine) Run(ctx context.Context, artifactRef string) (*Result, error) {
 			candMean := mean(scores)
 			if candMean > result.BestScore {
 				result.BestScore = candMean
+			}
+			if candMean > genBest {
+				genBest = candMean
 			}
 
 			outcome := CandidateOutcome{ID: cand.ID, Scores: scores, Strategy: cand.Strategy, Provider: primary}
@@ -243,6 +265,12 @@ func (e *Engine) Run(ctx context.Context, artifactRef string) (*Result, error) {
 		if err := e.record(ctx, artifact, gen, outcomes); err != nil {
 			return nil, err
 		}
+		genStatus, genDetail := "explored", fmt.Sprintf("%d candidate(s); best %.4f", len(candidates), genBest)
+		if accepted != nil {
+			genStatus = "accepted"
+			genDetail += fmt.Sprintf(" (accepted %s, %s)", accepted.ID, accepted.Strategy)
+		}
+		e.addStep(fmt.Sprintf("generation-%d", gen), genStatus, genDetail)
 
 		if accepted != nil {
 			var writeResp struct {

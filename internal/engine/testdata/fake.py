@@ -171,5 +171,23 @@ if port == "knowledgebase":
         reply({"ts": mode})
     reply({"passages": [{"text": "a fact", "source": "notes/x", "score": 0.8}]})
 
+if port == "audit":
+    if os.environ.get("EVOL_FAKE_AUDIT") == "error":
+        print("fake audit: exploded", file=sys.stderr)
+        sys.exit(3)
+    if action == "record":
+        with open(os.path.join(out_dir, "audit.jsonl"), "a", encoding="utf-8") as f:
+            f.write(json.dumps(req) + "\n")
+        reply({})
+    if action == "list":
+        reply({"runs": [{"run_id": "r-newest", "tool": "evol",
+                         "subject": "skills/fake", "outcome": "promoted",
+                         "started_at": "2026-08-20T00:00:00Z"}]})
+    if action == "show":
+        reply({"run": {"run_id": req.get("run_id"), "tool": "evol",
+                       "subject": "skills/fake", "outcome": "promoted",
+                       "steps": [{"seq": 0, "name": "baseline",
+                                  "status": "ok"}]}})
+
 print(f"fake adapter: unhandled {port}/{action}", file=sys.stderr)
 sys.exit(3)

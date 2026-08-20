@@ -43,6 +43,9 @@ type Config struct {
 		// CaseGen is optional: the generator-port `synth` action for
 		// grounded synthetic case generation (`evol cases synth`).
 		CaseGen PortConfig `mapstructure:"casegen" json:"casegen,omitempty"`
+		// Audit is optional: the run ledger (spec/port-audit.md). With
+		// no cmd the engine runs unaudited and notes it once per run.
+		Audit PortConfig `mapstructure:"audit" json:"audit,omitempty"`
 	} `mapstructure:"ports" json:"ports"`
 
 	Thresholds struct {
