@@ -44,9 +44,14 @@ choice becomes part of the eval space rather than a config afterthought.
 → [provider table](adapters/generator-llm/README.md)
 
 **4. Not just skills.**
-Four artifact kinds — `skill`, `prompt`, `command`, `tool-config` — and
-it points at the files you already have. No migration, no proprietary
-format.
+`skill`, `prompt`, `command`, and `tool-config` are the reference
+kinds, not the boundary: an artifact is any versioned text the store
+can resolve — frontmatter optional, body arbitrary — so a DSPy program,
+a structured-output schema, a workflow definition, an agent's memory
+file, or a one-liner — a prompt, or a chained shell command — is one
+ArtifactStore ref away. It points at the files you already have — no
+migration, no proprietary format.
+→ [ArtifactStore contract](spec/port-artifactstore.md)
 
 **5. Extend it in any language. No SDK.**
 Ports are one JSON object in, one out, over stdio. The proof is a
@@ -108,23 +113,32 @@ way to score its output — programmatically or by rubric.
   cases synthesized from the artifact alone reward that artifact's own
   blind spots. Synthesis requires knowledge grounding, and its output
   stays quarantined until a human promotes it.
-- **You need an installable release today.** There isn't one yet.
+- **You need something battle-tested today.** evol is experimental —
+  pre-alpha code under a published spec; flags, layouts, and defaults
+  still move between commits.
 
 ---
 
 ## How it works
 
-```
-             ┌────────────────────────────────────────────────┐
-             │                loop engine (evol)              │
-             └────────────────────────────────────────────────┘
-   load artifact → eval cases → propose → execute → score → gate
-        │              │           │         │        │       │
-   ArtifactStore    Corpus     Generator  Executor  Scorer  accept ⇒ write + record
-                      ▲          ▲                           reject ⇒ record (tabu)
-                      │     KnowledgeBase                            │
-                      └────────── write-back, every generation ──────┘
-                                                          Audit ⇒ run ledger
+```mermaid
+flowchart LR
+    subgraph engine["loop engine — owns control flow only"]
+        direction LR
+        load --> propose --> execute --> score --> gate{gate}
+    end
+    gate -->|accept| promote["write back + record"]
+    gate -->|reject| tabu["record as tabu"]
+    AS[("ArtifactStore")] -.-> load
+    C[("Corpus")] -.->|"cases + tabu"| load
+    G[("Generator")] -.-> propose
+    KB[("KnowledgeBase<br>(optional)")] -.->|grounding| propose
+    X[("Executor")] -.-> execute
+    S[("Scorer")] -.-> score
+    promote -.-> AS
+    promote -.-> C
+    tabu -.-> C
+    gate -.-> AUD[("Audit<br>(optional)")]
 ```
 
 The engine owns control flow only. Every I/O exchange crosses a **port**
@@ -138,22 +152,32 @@ than a fork.
 
 ## Quick start
 
+Install from source (no packaged release yet; needs `git` + `go`):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/hop-top/evol/main/scripts/install.sh | sh
+```
+
+That installs `evol` plus one `evol-adapter-<name>` per reference
+adapter — the names [`evol.example.yaml`](evol.example.yaml) wires.
+Or work from a clone:
+
 ```sh
 git clone https://github.com/hop-top/evol && cd evol
-mise trust && mise run install
+make quickstart   # engine + example adapters, then a keyless dry-run
+```
 
-# engine + adapters the example config uses
-# (run under mise: it sets GOFLAGS=-buildvcs=false, needed in worktrees)
-mise exec -- go build -o e2e/bin/evol .
-for a in artifact-fs generator-llm executor-apx corpus-fs kb-ctxt; do
-  mise exec -- go build -o e2e/bin/$a ./adapters/$a
-done
+Setting up an agent to work on or with evol? Hand it this:
 
-# verify wiring — no LLM calls, no keys
-e2e/bin/evol run --config e2e/evol.yaml --dry-run --format json
-
-# what's evolvable, and how each artifact has fared so far
-e2e/bin/evol targets --config e2e/evol.yaml
+```text
+SETUP (agents)
+  requires  git, go (or `mise trust && mise run install` for the pinned toolchain)
+  build     make quickstart      # engine + adapters -> e2e/bin, keyless dry-run, expect exit 0
+  verify    e2e/bin/evol run --config e2e/evol.yaml --dry-run --format json
+  live loop e2e/RUNBOOK.md       # needs ANTHROPIC_API_KEY or a local Ollama
+  example   e2e/README.md        # layout of the worked example + committed evidence
+  extend    spec/README.md       # wire protocol, then spec/port-*.md per port
+  conventions adapters/README.md # adapter naming + layout
 ```
 
 The repo ships a complete worked example under [e2e/](e2e/): a
@@ -347,8 +371,10 @@ are published v1 (`evol: "1"`, additive-only — the commitment is in
 demonstrated the verified improvement above. The CLI and reference
 adapters remain pre-alpha: flags and layouts may change.
 
-- **No installable release.** Blocked on an upstream tag-shape question;
-  `go install` is not a supported path yet.
+- **No packaged release.** Install is from source
+  ([`scripts/install.sh`](scripts/install.sh) or `make quickstart`);
+  tagged releases and `go install` wait on an upstream tag-shape
+  question.
 - **Scoring is programmatic today.** The LLM-judge tier landed upstream
   in the eval engine but the installed build here predates it.
 - **Session mining is converter-only.** `cases-crtx` turns recorded
@@ -363,23 +389,29 @@ adapters remain pre-alpha: flags and layouts may change.
 
 ## Docs
 
-[RUNBOOK](e2e/RUNBOOK.md) (run the loop) ·
-[spec/](spec/README.md) (implement a port) ·
-[self-scheduling](docs/self-scheduling.md) ·
-[synthesis](docs/synthesis.md) ·
-[review](docs/review.md) ·
-[promotion](docs/promotion.md) ·
-[audit](docs/audit.md) ·
-[routing write-back](docs/routing-writeback.md)
+- [RUNBOOK](e2e/RUNBOOK.md) — run the loop end to end
+- [spec/](spec/README.md) — wire protocol and port contracts; implement an adapter
+- [adapters/](adapters/README.md) — reference adapters, naming and layout conventions
+- [e2e/](e2e/README.md) — the worked example: layout and committed evidence
+- [self-scheduling](docs/self-scheduling.md) — `--select` policies; the loop picks its own target
+- [synthesis](docs/synthesis.md) — grounded case synthesis, always quarantined
+- [review](docs/review.md) — human review of machine-generated intake
+- [promotion](docs/promotion.md) — what happens after the gate, hooks, rollback
+- [audit](docs/audit.md) — the run ledger behind `evol runs`
+- [routing write-back](docs/routing-writeback.md) — per-model evidence becomes routing config
 
-## Development
+## Contributing
 
-```sh
-mise trust && mise run install
-go build ./... && go test ./...
-golangci-lint run ./...
-```
+1. Fork, branch (`feat/my-change`), commit with
+   [Conventional Commits](https://www.conventionalcommits.org).
+2. `mise trust && mise run install` pins the toolchain; `make check`
+   runs what CI runs — lint, tests, link check.
+3. Implementing a port adapter? Start at [spec/README.md](spec/README.md)
+   for the wire protocol and [adapters/README.md](adapters/README.md)
+   for conventions. Any language qualifies — the third-party example
+   was written from the spec text alone.
+4. Open a PR.
 
 ## License
 
-[MIT](LICENSE). Maintained by Jad Bitar.
+[MIT](LICENSE)
