@@ -1,0 +1,65 @@
+name: 12fcc
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Least privilege by default; jobs grant only what they need.
+permissions:
+  contents: read
+
+jobs:
+  # PR runs: annotate + comment, no repo write. Scoped to cmd/ (the
+  # command-surface tree).
+  conformance:
+    name: 12-factor AI-CLI conformance
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write     # sticky PR comment
+      security-events: write   # SARIF upload to code-scanning
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0     # full history so --diff=auto resolves base
+
+      # Pinned to a full commit SHA (supply-chain hardening); spec-12fc
+      # has no release tag yet. Re-pin to the @v1 tag SHA once published.
+      - uses: hop-top/spec-12fc@fbd05973d8c0ec1acd9b20994d3db9bbfc3ac141 # main @ 2026-07-02 (latest pushed; two spec-12fc commits await push)
+        with:
+          command: all
+          paths: cmd/
+          diff: ""            # scan paths, not PR diff; --diff+--paths are mutually exclusive
+          fail-on: 2,3,5
+          upload-sarif: true
+          pr-comment: true
+          commit-badge: false
+
+  # Push-to-main: same check. commit-badge stays false until the repo
+  # carries story-doc collateral — with zero scannable files the leaves
+  # pass vacuously and the generated badge is meaningless. Flip to true
+  # once story docs land so the badge reflects a real grade.
+  conformance-badge:
+    name: 12-factor AI-CLI conformance (badge)
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write   # SARIF upload to code-scanning
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: hop-top/spec-12fc@fbd05973d8c0ec1acd9b20994d3db9bbfc3ac141 # main @ 2026-07-02 (latest pushed; two spec-12fc commits await push)
+        with:
+          command: all
+          paths: cmd/
+          diff: ""
+          fail-on: 2,3,5
+          upload-sarif: true
+          pr-comment: false
+          commit-badge: false

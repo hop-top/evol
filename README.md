@@ -1,7 +1,7 @@
 # evol
 
 [![CI](https://github.com/hop-top/evol/actions/workflows/ci-go.yml/badge.svg)](https://github.com/hop-top/evol/actions/workflows/ci-go.yml)
-[![12-factor AI-CLI](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/hop-top/evol/main/.12fcc.json)](https://github.com/hop-top/evol/blob/main/.12fcc.json)
+[![12-factor AI-CLI](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/hop-top/evol/main/.12fc.json)](https://github.com/hop-top/evol/blob/main/.12fc.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **evol rewrites the skill files, prompts, and configs your agent works
