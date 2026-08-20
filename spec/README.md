@@ -84,6 +84,7 @@ require fields a port file marks optional.
 | Corpus | eval cases, verdicts, tabu history, corrections | 1 | [port-corpus.md](port-corpus.md) |
 | KnowledgeBase | contextual knowledge grounding proposals; optional | 1 | [port-knowledgebase.md](port-knowledgebase.md) |
 | Scorer | score a transcript against an eval case | 2 | [port-scorer.md](port-scorer.md) |
+| Audit | run ledger — record, list, and show evolution runs | 2 (draft) | [port-audit.md](port-audit.md) |
 
 Conformance fixtures: none shipped yet for any port — the
 second-adapter rule gates each independently. A second KnowledgeBase
