@@ -71,3 +71,11 @@ executor_mode: replay
 # root). When set, the promoted candidate's corpus record carries it as
 # fixtures.cassette_dir for regression replay.
 # fixtures_dir: .evol/cassettes
+
+# Optional: routing write-back. After sweep runs, `evol routing emit`
+# aggregates per-provider evidence from the corpus and hands it to the
+# routing adapter, which writes a kit-llm pool fragment (weights =
+# normalized per-provider holdout means). The pool file is itself a
+# tool-config artifact the loop can evolve. Adapter argv resolves from
+# --adapter, then EVOL_ROUTING_CMD, then ["routing-emit"] on PATH.
+# See docs/routing-writeback.md.
