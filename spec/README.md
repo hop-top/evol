@@ -1,11 +1,17 @@
 # evol port contracts
 
-> **STATUS: INTERNAL DRAFT** — contracts are unstable until a first
-> end-to-end improvement is demonstrated. Field names, envelope shape,
-> and action sets may change without notice. No conformance fixtures
-> ship until a second real adapter exists for any given port. The path
-> from draft to published is [publishing.md](publishing.md); the fixture
-> design is [conformance-plan.md](conformance-plan.md).
+> **STATUS: PUBLISHED** (2026-08-20) — `evol: "1"`. The publication
+> precondition is met: the reference loop demonstrated a verified
+> end-to-end improvement on a real artifact (run evidence in
+> [`e2e/runs/`](../e2e/runs/), promoted artifact under
+> [`e2e/artifacts/commit-messages/`](../e2e/artifacts/commit-messages/)).
+> From this point the additive/breaking rules in "Versioning &
+> stability" below are a commitment: additive changes land freely,
+> anything breaking bumps the `evol` version with a migration note.
+> No conformance fixtures ship until a second real adapter exists for
+> any given port — that rule still gates each port independently
+> ([conformance-plan.md](conformance-plan.md)); the publication process
+> itself is recorded in [publishing.md](publishing.md).
 
 evol is a self-improvement loop for agent capabilities: it evaluates an
 artifact (a skill, prompt, command, or tool config), proposes candidate
@@ -77,10 +83,16 @@ require fields a port file marks optional.
 | Executor | run a candidate against an eval case | 1 | [port-executor.md](port-executor.md) |
 | Corpus | eval cases, verdicts, tabu history, corrections | 1 | [port-corpus.md](port-corpus.md) |
 | KnowledgeBase | contextual knowledge grounding proposals; optional | 1 | [port-knowledgebase.md](port-knowledgebase.md) |
+| Scorer | score a transcript against an eval case | 2 | [port-scorer.md](port-scorer.md) |
 
-Tier 2 ports (Scorer/Judge, Gate, Reviewer, Audit) are deliberately not
-specified yet: they will be extracted from the working reference
-implementation, not designed up front.
+Conformance fixtures: none shipped yet for any port — the
+second-adapter rule gates each independently. A second KnowledgeBase
+adapter is under construction; its fixtures land with it.
+
+Of the Tier-2 ports, Scorer has graduated (extracted from the working
+engine seam). Gate, Reviewer, and Audit remain deliberately
+unspecified: they graduate when extracted from the working reference
+implementation, on their own clock — not designed up front.
 
 One level below the Executor sits the **reference runner contract** — a
 four-line stdin/env/stdout convention that makes the agent under test a
@@ -100,10 +112,11 @@ because it binds runner processes, not port adapters.
   actions, new enum values callers already tolerate. Additive changes
   do not bump the version — which is why adapters must ignore unknown
   fields.
-- During the draft period, additions are annotated *"added while
-  INTERNAL DRAFT"* in the port files. At publication those annotations
-  are folded into the base tables and disappear; from then on the
+- Draft-period additions were annotated *"added while INTERNAL
+  DRAFT"* in the port files; at publication those annotations were
+  folded into the base tables. From this publication the
   additive/breaking rules above are a commitment, not an intention.
+  (One exception is called out in "Known gaps" below.)
 - Adapters that predate an optional action may answer it with an
   adapter error; callers are expected to degrade (the Corpus `history`
   action documents this pattern).
@@ -119,3 +132,11 @@ because it binds runner processes, not port adapters.
   provide one. See [port-executor.md](port-executor.md).
 - **Degrade gracefully.** Optional ports (KnowledgeBase) may report
   `{"unavailable": true}`; the engine continues with reduced capability.
+
+## Known gaps
+
+- Per-case `checks` metadata (which scoring criteria apply to a case)
+  currently travels outside the Corpus `cases` schema, joined
+  scorer-side by case id. Whether it becomes an optional `cases[]`
+  field or stays a scorer concern is an open decision tracked in
+  [port-corpus.md](port-corpus.md)'s evolution.

@@ -1,6 +1,6 @@
 # Port: KnowledgeBase
 
-> Part of the [evol port contracts](README.md) — INTERNAL DRAFT, `evol: "1"`.
+> Part of the [evol port contracts](README.md) — published, `evol: "1"`.
 
 Unstructured contextual knowledge: decisions, procedures, findings,
 notes. The engine reads it to ground candidate proposals in real usage

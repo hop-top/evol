@@ -1,6 +1,6 @@
 # Port: ArtifactStore
 
-> Part of the [evol port contracts](README.md) — INTERNAL DRAFT, `evol: "1"`.
+> Part of the [evol port contracts](README.md) — published, `evol: "1"`.
 
 Loads, writes, and versions the artifact under evolution. An artifact is
 a text document with structured frontmatter and a prose/instruction

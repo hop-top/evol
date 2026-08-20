@@ -1,6 +1,6 @@
 # Port: Generator
 
-> Part of the [evol port contracts](README.md) — INTERNAL DRAFT, `evol: "1"`.
+> Part of the [evol port contracts](README.md) — published, `evol: "1"`.
 
 Proposes candidate revisions of an artifact. The generator is the
 mutation half of the loop; everything else measures. Implementations
@@ -35,7 +35,7 @@ Response:
 | `candidates[].body` | string | full revised body |
 | `candidates[].rationale` | string | why this revision should score better |
 | `candidates[].strategy` | string | free-form strategy label, e.g. `tighten`, `add-example`, `reorder` |
-| `candidates[].provider` | string | optional — resolved provider URI that produced this candidate, secrets stripped (added while INTERNAL DRAFT; consumed by model-comparison work) |
+| `candidates[].provider` | string | optional — resolved provider URI that produced this candidate, secrets stripped; consumed by model-comparison and routing-evidence work |
 
 ```json
 {"evol": "1", "port": "generator", "action": "propose",

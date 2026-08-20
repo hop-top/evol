@@ -1,6 +1,6 @@
 # Port: Executor
 
-> Part of the [evol port contracts](README.md) — INTERNAL DRAFT, `evol: "1"`.
+> Part of the [evol port contracts](README.md) — published, `evol: "1"`.
 
 Runs one candidate against one eval case and returns the transcript.
 The executor is where the candidate meets the world: an agent session, a
@@ -27,7 +27,7 @@ Request:
 | `case.id` | string | eval case id, from [Corpus](port-corpus.md) `cases` |
 | `case.input` | string | the task input to run |
 | `env.mode` | string | execution mode hint: `replay` (frozen environment), `record` (capture a fresh environment), `live` (no freezing) — adapters implement the subset they support |
-| `env.provider` | string | optional model/provider URI for the agent under test (e.g. `claude://haiku`, `ollama://llama3.2:3b?base_url=http://127.0.0.1:11500`). Executors MUST expose it to the child verbatim (reference implementation: env var `EVOL_PROVIDER`); interpretation belongs to the run wrapper. *Added while INTERNAL DRAFT.* |
+| `env.provider` | string | optional model/provider URI for the agent under test (e.g. `claude://haiku`, `ollama://llama3.2:3b?base_url=http://127.0.0.1:11500`). Executors MUST expose it to the child verbatim (reference implementation: env var `EVOL_PROVIDER`); interpretation belongs to the run wrapper. |
 
 Response:
 
@@ -71,7 +71,7 @@ Distinguish two failure planes:
 
 ## Reference runner contract
 
-*INTERNAL DRAFT.* Executors that spawn a command to run the agent under
+Executors that spawn a command to run the agent under
 test SHOULD spawn one conforming to this contract, making the agent
 runner a user-swappable seam with the same philosophy as the ports —
 no tool is privileged:
@@ -94,3 +94,13 @@ to concrete CLIs live with the consuming project (e.g. `e2e/bin/runners/`).
   during candidate evaluation makes candidates observe different worlds.
 - Adapters that cannot observe tool calls return `"tool_calls": []` —
   scoring dimensions that need them simply get no signal.
+- **Two recording layers exist in practice; know which one you are
+  configuring.** Executor-level environment freezing (this port's
+  `env.mode`, with adapter-scoped cassette locations) and runner-level
+  recording wrappers (which wrap the spawned runner and key recordings
+  on the candidate's *content* hash) are independent. When both are
+  available, prefer content-hash identity for anything that must
+  survive re-staging: staging paths churn between runs, content does
+  not. An executor that derives cassette locations from the staged
+  `candidate_ref` string should document that those locations are
+  run-local.
