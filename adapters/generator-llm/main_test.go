@@ -367,3 +367,38 @@ func TestSanitizeURI(t *testing.T) {
 		}
 	}
 }
+
+func TestParseCandidateFenceWrapped(t *testing.T) {
+	text := "```\n===FRONTMATTER===\nname: x\n===BODY===\nbody text\n===RATIONALE===\nclearer\n```"
+	c, err := parseCandidate(text)
+	if err != nil {
+		t.Fatalf("fence-wrapped reply rejected: %v", err)
+	}
+	if c.Frontmatter != "name: x" || c.Body != "body text" || c.Rationale != "clearer" {
+		t.Fatalf("unexpected parse: %+v", c)
+	}
+}
+
+func TestParseCandidateFenceWithLang(t *testing.T) {
+	text := "```markdown\n===FRONTMATTER===\nname: x\n===BODY===\nbody\n===RATIONALE===\nr\n```"
+	if _, err := parseCandidate(text); err != nil {
+		t.Fatalf("lang-fenced reply rejected: %v", err)
+	}
+}
+
+func TestParseCandidateWhitespaceTolerance(t *testing.T) {
+	text := "\n\n  ===FRONTMATTER===\nname: x\n\n===BODY===\n\nbody\n\n===RATIONALE===\n r \n\n"
+	c, err := parseCandidate(text)
+	if err != nil {
+		t.Fatalf("whitespace variant rejected: %v", err)
+	}
+	if c.Rationale != "r" {
+		t.Fatalf("rationale not trimmed: %q", c.Rationale)
+	}
+}
+
+func TestParseCandidateStillRequiresMarkers(t *testing.T) {
+	if _, err := parseCandidate("```\nno markers here\n```"); err == nil {
+		t.Fatal("missing markers must still be rejected")
+	}
+}

@@ -60,6 +60,9 @@ func buildSystemPrompt(strat strategy, artifact Artifact) string {
 	b.WriteString("Output format — exactly these three fenced sections, nothing before or after:\n")
 	fmt.Fprintf(&b, "%s\n<revised frontmatter>\n%s\n<revised body>\n%s\n<one-paragraph rationale: why this revision should score better>\n",
 		markFrontmatter, markBody, markRationale)
+	b.WriteString("\nCompact example of a valid reply:\n")
+	fmt.Fprintf(&b, "%s\nname: example\ndescription: does a thing\n%s\n# Example\n\nBody text here.\n%s\nTighter wording should raise clarity scores.\n",
+		markFrontmatter, markBody, markRationale)
 	return b.String()
 }
 
@@ -106,6 +109,7 @@ func buildUserPrompt(req Request) string {
 // leading/trailing chatter around the fenced block but requires the
 // three markers in order.
 func parseCandidate(text string) (Candidate, error) {
+	text = stripFence(text)
 	fmIdx := strings.Index(text, markFrontmatter)
 	bodyIdx := strings.Index(text, markBody)
 	ratIdx := strings.Index(text, markRationale)
@@ -122,10 +126,31 @@ func parseCandidate(text string) (Candidate, error) {
 	body := strings.TrimSpace(text[bodyIdx+len(markBody) : ratIdx])
 	rat := strings.TrimSpace(text[ratIdx+len(markRationale):])
 
+	rat = strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(rat), "```"))
+
 	if fm == "" || body == "" {
 		return Candidate{}, fmt.Errorf("empty section (frontmatter %d chars, body %d chars)",
 			len(fm), len(body))
 	}
 
 	return Candidate{Frontmatter: fm, Body: body, Rationale: rat}, nil
+}
+
+// stripFence removes ONE wrapping code-fence layer (``` or ```lang) when
+// the whole reply is fenced — a common small-model habit. Markers stay
+// required; this only unwraps, never loosens.
+func stripFence(text string) string {
+	t := strings.TrimSpace(text)
+	if !strings.HasPrefix(t, "```") {
+		return text
+	}
+	nl := strings.IndexByte(t, '\n')
+	if nl < 0 {
+		return text
+	}
+	rest := t[nl+1:]
+	if end := strings.LastIndex(rest, "```"); end >= 0 {
+		rest = rest[:end]
+	}
+	return rest
 }
