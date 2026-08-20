@@ -50,9 +50,9 @@ func auditEngine(cmd *cobra.Command) (*engine.Engine, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := cfg.Normalize(); err != nil {
-		return nil, err
-	}
+	// Deliberately no full Normalize(): the runs ledger is read-only —
+	// demanding an executor/generator/corpus config to list past runs
+	// would be hostile. Only the audit port matters here.
 	eng := engine.New(*cfg)
 	eng.Log = cmd.ErrOrStderr()
 	return eng, nil
