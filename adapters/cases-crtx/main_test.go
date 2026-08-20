@@ -122,7 +122,7 @@ func mustOut(t *testing.T, stdin string, args ...string) string {
 
 func TestScrubbingAllClasses(t *testing.T) {
 	// secret = the exact sensitive token that must vanish from output
-	secrets := map[string]string{
+	secrets := map[string]string{ //nolint:gosec // synthetic fixtures, not credentials
 		"aws-key":      "AKIAABCDEFGHIJKLMNOP",
 		"github-token": "ghp_abcdefghijklmnopqrstuvwxyz0123456789",
 		"github-pat":   "github_pat_22CHARSOFPATHERE1234567890ABCDEFG",

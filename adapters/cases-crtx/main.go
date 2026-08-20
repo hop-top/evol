@@ -245,7 +245,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 
 	seen := map[string]bool{}
 	out := bufio.NewWriter(stdout)
-	defer out.Flush()
+	defer func() { _ = out.Flush() }()
 	enc := json.NewEncoder(out)
 
 	for _, env := range envs {
@@ -298,7 +298,7 @@ func report(st *stats, stderr io.Writer) {
 	for _, n := range st.redactions {
 		total += n
 	}
-	fmt.Fprintf(stderr,
+	_, _ = fmt.Fprintf(stderr,
 		"cases-crtx: emitted %d case(s) from %d pair(s); dedup %d, grep-filtered %d, redactions %d, malformed lines %d, rejected envelopes %d\n",
 		st.emitted, st.pairsFound, st.dedupSkips, st.grepSkips, total, st.malformed, st.rejected)
 	if total > 0 {
