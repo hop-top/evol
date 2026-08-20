@@ -41,6 +41,9 @@ type Engine struct {
 
 	// Log receives progress lines; defaults to io.Discard.
 	Log io.Writer
+
+	// sigWarned dedups the small-sample significance warning per run.
+	sigWarned bool
 }
 
 // New builds an Engine from a normalized Config.
@@ -106,14 +109,26 @@ func (e *Engine) Run(ctx context.Context, artifactRef string) (*Result, error) {
 	}
 	defer func() { _ = os.RemoveAll(staging) }()
 
-	// 3. Baseline: current artifact over all cases.
-	baselineScores, err := e.evaluate(ctx, staging, "baseline", artifact.Frontmatter, artifact.Body, cases)
+	// 3. Baseline: current artifact over all cases, under the primary
+	// provider. Secondary providers (model-dimension sweep) are scored
+	// once and recorded as evidence — never gated on.
+	primary := e.cfg.primaryProvider()
+	baselineScores, err := e.evaluate(ctx, staging, "baseline", artifact.Frontmatter, artifact.Body, primary, cases)
 	if err != nil {
 		return nil, err
 	}
 	baselineMean := mean(baselineScores)
 	e.logf("baseline %s@%s: %.4f over %d case(s) × %d trial(s)",
 		artifact.Ref, artifact.Version, baselineMean, len(cases), e.cfg.Thresholds.Trials)
+
+	if evidence, err := e.sweep(ctx, staging, "baseline", artifact.Frontmatter, artifact.Body, cases); err != nil {
+		return nil, err
+	} else if len(evidence) > 0 {
+		// Generation 0 holds baseline sweep evidence.
+		if err := e.record(ctx, artifact, 0, evidence); err != nil {
+			return nil, err
+		}
+	}
 
 	result := &Result{
 		ArtifactRef:     artifact.Ref,
@@ -153,7 +168,7 @@ func (e *Engine) Run(ctx context.Context, artifactRef string) (*Result, error) {
 			cand := candidates[i]
 			result.CandidatesTried++
 
-			scores, evalErr := e.evaluate(ctx, staging, cand.ID, cand.Frontmatter, cand.Body, cases)
+			scores, evalErr := e.evaluate(ctx, staging, cand.ID, cand.Frontmatter, cand.Body, primary, cases)
 			if evalErr != nil {
 				return nil, evalErr
 			}
@@ -162,19 +177,35 @@ func (e *Engine) Run(ctx context.Context, artifactRef string) (*Result, error) {
 				result.BestScore = candMean
 			}
 
-			outcome := CandidateOutcome{ID: cand.ID, Scores: scores}
+			outcome := CandidateOutcome{ID: cand.ID, Scores: scores, Provider: primary}
 			switch {
 			case allFailed(scores):
 				outcome.Verdict = VerdictFailed
 				outcome.Rationale = "every case run failed"
 			case candMean >= baselineMean+e.cfg.Thresholds.Delta:
+				sig := e.significance(baselineScores, scores)
+				if sig.tested && sig.p > e.cfg.Thresholds.SigLevel {
+					outcome.Verdict = VerdictRejected
+					outcome.Rationale = fmt.Sprintf(
+						"holdout mean %.4f cleared baseline %.4f + delta %.4f but the improvement is not significant (paired bootstrap p=%.4f > %.4f)",
+						candMean, baselineMean, e.cfg.Thresholds.Delta, sig.p, e.cfg.Thresholds.SigLevel)
+					break
+				}
 				outcome.Verdict = VerdictAccepted
 				outcome.Rationale = fmt.Sprintf(
 					"holdout mean %.4f ≥ baseline %.4f + delta %.4f",
 					candMean, baselineMean, e.cfg.Thresholds.Delta)
+				if sig.tested {
+					outcome.Rationale += fmt.Sprintf(
+						"; paired bootstrap p=%.4f ≤ %.4f", sig.p, e.cfg.Thresholds.SigLevel)
+				}
 				if accepted == nil {
 					accepted = &candidates[i]
 					acceptedMean = candMean
+					if sig.tested {
+						p := sig.p
+						result.SigP = &p
+					}
 					// Pin the recorded environment for the promoted run
 					// so it can serve as a regression fixture.
 					if e.cfg.FixturesDir != "" {
@@ -190,6 +221,11 @@ func (e *Engine) Run(ctx context.Context, artifactRef string) (*Result, error) {
 			e.logf("generation %d: candidate %s (%s) mean %.4f → %s",
 				gen, cand.ID, cand.Strategy, candMean, outcome.Verdict)
 			outcomes = append(outcomes, outcome)
+			evidence, evErr := e.sweep(ctx, staging, cand.ID, cand.Frontmatter, cand.Body, cases)
+			if evErr != nil {
+				return nil, evErr
+			}
+			outcomes = append(outcomes, evidence...)
 			history = append(history, ScoreSummary{
 				Version: cand.ID, Score: candMean, Feedback: outcome.Rationale,
 			})
@@ -229,7 +265,7 @@ func (e *Engine) Run(ctx context.Context, artifactRef string) (*Result, error) {
 // evaluate stages a document, runs every case × trials through the
 // Executor, and scores each transcript. Run-level failures score 0.0
 // and carry the error as the reason — failure is data.
-func (e *Engine) evaluate(ctx context.Context, staging, id, frontmatter, body string, cases []Case) ([]CaseScore, error) {
+func (e *Engine) evaluate(ctx context.Context, staging, id, frontmatter, body, provider string, cases []Case) ([]CaseScore, error) {
 	ref, err := stage(staging, id, frontmatter, body)
 	if err != nil {
 		return nil, err
@@ -243,8 +279,8 @@ func (e *Engine) evaluate(ctx context.Context, staging, id, frontmatter, body st
 				Error      string     `json:"error"`
 			}
 			execEnv := map[string]any{"mode": e.cfg.ExecutorMode}
-			if e.cfg.ExecutorProvider != "" {
-				execEnv["provider"] = e.cfg.ExecutorProvider
+			if provider != "" {
+				execEnv["provider"] = provider
 			}
 			if err := e.executor.Call(ctx, "run", map[string]any{
 				"candidate_ref": ref,
@@ -281,6 +317,57 @@ func (e *Engine) evaluate(ctx context.Context, staging, id, frontmatter, body st
 		}
 	}
 	return scores, nil
+}
+
+// sweep scores one document under every secondary provider and shapes
+// the results as evidence outcomes (model-dimension sweep). Evidence is
+// recorded for routing decisions downstream; it never gates.
+func (e *Engine) sweep(ctx context.Context, staging, id, frontmatter, body string, cases []Case) ([]CandidateOutcome, error) {
+	secondaries := e.cfg.secondaryProviders()
+	if len(secondaries) == 0 {
+		return nil, nil
+	}
+	outcomes := make([]CandidateOutcome, 0, len(secondaries))
+	for _, provider := range secondaries {
+		scores, err := e.evaluate(ctx, staging, id, frontmatter, body, provider, cases)
+		if err != nil {
+			return nil, err
+		}
+		e.logf("sweep %s under %s: %.4f (evidence)", id, provider, mean(scores))
+		outcomes = append(outcomes, CandidateOutcome{
+			ID:        id,
+			Scores:    scores,
+			Verdict:   VerdictEvidence,
+			Rationale: "provider sweep evidence; not gated",
+			Provider:  provider,
+		})
+	}
+	return outcomes, nil
+}
+
+// sigResult carries one significance decision.
+type sigResult struct {
+	tested bool
+	p      float64
+}
+
+// significance runs the paired bootstrap when enough paired cases
+// exist; below the floor it degrades to mean-only gating with a logged
+// warning (once per run).
+func (e *Engine) significance(baseline, candidate []CaseScore) sigResult {
+	diffs := pairedDiffs(baseline, candidate)
+	if len(diffs) < sigMinPairs {
+		if !e.sigWarned {
+			e.sigWarned = true
+			e.logf("significance disabled: %d paired case(s) < %d floor; gating on mean only",
+				len(diffs), sigMinPairs)
+		}
+		return sigResult{}
+	}
+	return sigResult{
+		tested: true,
+		p:      bootstrapP(diffs, sigResamples, e.cfg.Thresholds.SigSeed),
+	}
 }
 
 // corrections fetches human-corrected cases from the Corpus. Any error

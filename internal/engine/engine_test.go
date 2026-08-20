@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -324,5 +325,178 @@ func TestExecutorProviderOmittedByDefault(t *testing.T) {
 		if _, present := env["provider"]; present {
 			t.Errorf("executor env should omit provider when unconfigured, got %v", env)
 		}
+	}
+}
+
+// providerOf pulls candidate entries (id, provider, verdict) from the
+// recorded generations, flattened in record order.
+func recordedEntries(t *testing.T, dir string) []map[string]any {
+	t.Helper()
+	var out []map[string]any
+	for _, rec := range readRecords(t, dir) {
+		gen, _ := rec["generation"].(map[string]any)
+		cands, _ := rec["candidates"].([]any)
+		for _, c := range cands {
+			m, _ := c.(map[string]any)
+			m["_gen"] = gen["number"]
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
+func TestProviderSweepRecordsEvidenceAndGatesOnPrimary(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("EVOL_TEST_DIR", dir)
+	t.Setenv("EVOL_FAKE_GOOD", "1")
+	// The secondary provider is scored terribly — if the gate ever
+	// looked at it, nothing would be promoted.
+	t.Setenv("EVOL_FAKE_PENALIZE_PROV", "prov-b")
+
+	cfg := fakeConfig(t, false)
+	cfg.ExecutorProviders = []string{"prov-a", "prov-b"}
+
+	res, err := New(cfg).Run(context.Background(), "skills/fake")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if !res.Accepted {
+		t.Fatal("candidate must be promoted on the primary provider despite terrible secondary scores")
+	}
+
+	entries := recordedEntries(t, dir)
+	var baselineEvidence, candEvidence, primary int
+	for _, e := range entries {
+		verdict, _ := e["verdict"].(string)
+		provider, _ := e["provider"].(string)
+		id, _ := e["id"].(string)
+		gen, _ := e["_gen"].(float64)
+		switch {
+		case verdict == "evidence" && id == "baseline":
+			baselineEvidence++
+			if provider != "prov-b" || gen != 0 {
+				t.Errorf("baseline evidence = provider %q gen %v, want prov-b gen 0", provider, gen)
+			}
+		case verdict == "evidence":
+			candEvidence++
+			if provider != "prov-b" {
+				t.Errorf("candidate evidence provider = %q, want prov-b", provider)
+			}
+			scores, _ := e["scores"].([]any)
+			m, _ := scores[0].(map[string]any)
+			if v, _ := m["score"].(float64); v != 0.1 {
+				t.Errorf("penalized evidence score = %v, want 0.1", v)
+			}
+		case verdict == VerdictAccepted:
+			primary++
+			if provider != "prov-a" {
+				t.Errorf("accepted provider = %q, want primary prov-a", provider)
+			}
+		}
+	}
+	if baselineEvidence != 1 || candEvidence != 1 || primary != 1 {
+		t.Errorf("entries = baseline-evidence %d, cand-evidence %d, accepted %d; want 1/1/1",
+			baselineEvidence, candEvidence, primary)
+	}
+
+	// Both providers must have reached the executor.
+	seen := map[string]bool{}
+	for _, env := range executorEnvs(t, dir) {
+		p, _ := env["provider"].(string)
+		seen[p] = true
+	}
+	if !seen["prov-a"] || !seen["prov-b"] {
+		t.Errorf("executor providers seen = %v, want prov-a and prov-b", seen)
+	}
+}
+
+func TestSingleProviderRecordsNoEvidence(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("EVOL_TEST_DIR", dir)
+	t.Setenv("EVOL_FAKE_GOOD", "1")
+
+	cfg := fakeConfig(t, false)
+	cfg.ExecutorProvider = "prov-a"
+	if _, err := New(cfg).Run(context.Background(), "skills/fake"); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	for _, e := range recordedEntries(t, dir) {
+		if v, _ := e["verdict"].(string); v == "evidence" {
+			t.Errorf("single-provider run recorded evidence row: %v", e)
+		}
+		if g, _ := e["_gen"].(float64); g == 0 {
+			t.Errorf("single-provider run recorded a generation-0 row: %v", e)
+		}
+	}
+}
+
+func TestSignificanceAcceptsClearImprovement(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("EVOL_TEST_DIR", dir)
+	t.Setenv("EVOL_FAKE_GOOD", "1")
+	t.Setenv("EVOL_FAKE_CASES", "8")
+
+	res, err := New(fakeConfig(t, false)).Run(context.Background(), "skills/fake")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if !res.Accepted {
+		t.Fatal("uniform +0.4 improvement over 8 cases must be promoted")
+	}
+	if res.SigP == nil {
+		t.Fatal("sig_p must be reported when significance ran")
+	}
+	if *res.SigP > 0.01 {
+		t.Errorf("sig_p = %v, want tiny for a uniform improvement", *res.SigP)
+	}
+	entries := recordedEntries(t, dir)
+	rationale, _ := entries[0]["rationale"].(string)
+	if !strings.Contains(rationale, "p=") {
+		t.Errorf("accepted rationale carries no p-value: %q", rationale)
+	}
+}
+
+func TestSignificanceRejectsNoisyImprovement(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("EVOL_TEST_DIR", dir)
+	t.Setenv("EVOL_FAKE_GOOD", "1")
+	t.Setenv("EVOL_FAKE_CASES", "8")
+	t.Setenv("EVOL_FAKE_NOISY", "1")
+
+	res, err := New(fakeConfig(t, false)).Run(context.Background(), "skills/fake")
+	if !errors.Is(err, ErrNoImprovement) {
+		t.Fatalf("err = %v, want ErrNoImprovement (mean clears delta, p does not)", err)
+	}
+	if res.Accepted {
+		t.Fatal("noisy improvement must not be promoted")
+	}
+	entries := recordedEntries(t, dir)
+	rationale, _ := entries[0]["rationale"].(string)
+	if !strings.Contains(rationale, "not significant") {
+		t.Errorf("rejection rationale = %q, want a not-significant explanation", rationale)
+	}
+}
+
+func TestSignificanceSmallSampleFallsBackToMean(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("EVOL_TEST_DIR", dir)
+	t.Setenv("EVOL_FAKE_GOOD", "1")
+
+	var log bytes.Buffer
+	eng := New(fakeConfig(t, false)) // 1 case < sigMinPairs
+	eng.Log = &log
+
+	res, err := eng.Run(context.Background(), "skills/fake")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if !res.Accepted {
+		t.Fatal("small-sample runs must still gate on mean")
+	}
+	if res.SigP != nil {
+		t.Errorf("sig_p = %v, want nil below the pair floor", *res.SigP)
+	}
+	if !strings.Contains(log.String(), "significance disabled") {
+		t.Errorf("log = %q, want a significance-disabled warning", log.String())
 	}
 }

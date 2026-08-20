@@ -280,3 +280,79 @@ func TestHistoryEmptyForUnknownArtifact(t *testing.T) {
 		t.Errorf("generations = %v, want empty", gens)
 	}
 }
+
+func TestRecordRoundTripsProvider(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("EVOL_CORPUS_ROOT", root)
+
+	if _, err := call(t, `{"evol":"1","port":"corpus","action":"record",
+		"generation":{"artifact_ref":"`+ref+`","baseline_version":"v1","number":1},
+		"candidates":[
+		  {"id":"cand-1","scores":[{"score":0.9}],"verdict":"accepted","rationale":"ok","provider":"prov-a"},
+		  {"id":"cand-1","scores":[{"score":0.1}],"verdict":"evidence","rationale":"sweep","provider":"prov-b"},
+		  {"id":"cand-2","scores":[{"score":0.3}],"verdict":"rejected","rationale":"below gate"}
+		]}`); err != nil {
+		t.Fatalf("record: %v", err)
+	}
+
+	dir, _ := artifactDir(root, ref)
+	data, err := os.ReadFile(filepath.Join(dir, generationsFile)) // #nosec G304 -- test temp dir
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	if len(lines) != 3 {
+		t.Fatalf("recorded %d lines, want 3", len(lines))
+	}
+	var first map[string]any
+	if err := json.Unmarshal([]byte(lines[0]), &first); err != nil {
+		t.Fatal(err)
+	}
+	if first["provider"] != "prov-a" {
+		t.Errorf("provider = %v, want prov-a round-tripped", first["provider"])
+	}
+	var third map[string]any
+	if err := json.Unmarshal([]byte(lines[2]), &third); err != nil {
+		t.Fatal(err)
+	}
+	if _, present := third["provider"]; present {
+		t.Error("provider must be omitted when absent from the request")
+	}
+}
+
+func TestTabuAndHistoryIgnoreEvidenceRows(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("EVOL_CORPUS_ROOT", root)
+	seed(t, root, generationsFile,
+		`{"generation":{"artifact_ref":"`+ref+`","number":0},"id":"baseline","scores":[{"score":0.95}],"verdict":"evidence","rationale":"sweep","provider":"prov-b"}`,
+		`{"generation":{"artifact_ref":"`+ref+`","number":1},"id":"cand-1","scores":[{"score":0.4}],"verdict":"rejected","rationale":"below gate","strategy":"tighten"}`,
+		`{"generation":{"artifact_ref":"`+ref+`","number":1},"id":"cand-1","scores":[{"score":0.99}],"verdict":"evidence","rationale":"sweep","strategy":"tighten","provider":"prov-b"}`,
+	)
+
+	tabuResp, err := call(t, `{"evol":"1","port":"corpus","action":"tabu","artifact_ref":"`+ref+`"}`)
+	if err != nil {
+		t.Fatalf("tabu: %v", err)
+	}
+	var entries []map[string]any
+	if err := json.Unmarshal(tabuResp["entries"], &entries); err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 || entries[0]["verdict"] != "rejected" {
+		t.Errorf("tabu entries = %v, want only the rejected row", entries)
+	}
+
+	histResp, err := call(t, `{"evol":"1","port":"corpus","action":"history","artifact_ref":"`+ref+`"}`)
+	if err != nil {
+		t.Fatalf("history: %v", err)
+	}
+	var gens []map[string]any
+	if err := json.Unmarshal(histResp["generations"], &gens); err != nil {
+		t.Fatal(err)
+	}
+	if len(gens) != 1 {
+		t.Fatalf("history = %v, want a single generation (evidence rows skipped)", gens)
+	}
+	if gens[0]["best_score"].(float64) != 0.4 || gens[0]["verdict"] != "rejected" {
+		t.Errorf("history best = %v, want the rejected 0.4 — a 0.99 evidence row must not masquerade as progress", gens[0])
+	}
+}

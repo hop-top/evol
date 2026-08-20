@@ -56,8 +56,9 @@ Request:
 | `candidates` | object[] | one entry per candidate evaluated |
 | `candidates[].id` | string | generator candidate id |
 | `candidates[].scores` | object[] | per-case or aggregate: `{case_id?, score, reason?}` |
-| `candidates[].verdict` | string | `accepted`, `rejected`, or `failed` |
+| `candidates[].verdict` | string | `accepted`, `rejected`, `failed`, or `evidence` — evidence rows are provider-sweep observations (a candidate or the baseline scored under a non-primary provider); they inform routing decisions and MUST be excluded from tabu and history summaries (added while INTERNAL DRAFT) |
 | `candidates[].rationale` | string | why — gate result, judge feedback, constraint hit |
+| `candidates[].provider` | string? | optional executor provider URI these scores were produced under; sweep rows always carry it (added while INTERNAL DRAFT) |
 | `candidates[].fixtures` | object? | optional `{cassette_dir}` — recorded-environment location pinned with a promoted run, for regression replay (added while INTERNAL DRAFT) |
 
 Response: empty object (envelope only).

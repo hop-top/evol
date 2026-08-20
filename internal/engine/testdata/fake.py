@@ -8,6 +8,12 @@ Behavior knobs (env):
   EVOL_FAKE_GOOD  "1" -> generator proposes an IMPROVED candidate (scores
                   0.9); otherwise a WORSE candidate (scores 0.4)
   EVOL_FAKE_KB    "unavailable" -> knowledgebase answers unavailable
+  EVOL_FAKE_CASES N -> corpus serves N holdout cases (default 1)
+  EVOL_FAKE_NOISY "1" -> scorer gives IMPROVED outputs 1.0 on even-numbered
+                  cases and 0.2 on odd ones (mean improves, unstable)
+  EVOL_FAKE_PENALIZE_PROV <uri> -> scorer scores any transcript produced
+                  under that provider 0.1 (provider marker appended by the
+                  fake executor)
 """
 import json
 import os
@@ -48,11 +54,12 @@ if port == "artifactstore":
 
 if port == "corpus":
     if action == "cases":
+        n = int(os.environ.get("EVOL_FAKE_CASES", "1"))
         reply({"cases": [{
-            "id": "case-1", "input": "do the thing",
+            "id": f"case-{i}", "input": "do the thing",
             "expected": "the thing, done well",
             "split": req.get("split", "holdout"), "source": "golden",
-        }]})
+        } for i in range(1, n + 1)]})
     if action == "tabu":
         reply({"entries": []})
     if action == "corrections":
@@ -107,6 +114,9 @@ if port == "executor":
     if action == "run":
         with open(req["candidate_ref"], encoding="utf-8") as f:
             staged = f.read()
+        provider = (req.get("env") or {}).get("provider", "")
+        if provider:
+            staged += f"\n[prov={provider}]"
         reply({"transcript": {
             "output": staged, "tool_calls": [],
             "duration_ms": 5, "exit_code": 0,
@@ -115,6 +125,12 @@ if port == "executor":
 if port == "scorer":
     output = req["transcript"]["output"]
     value = 0.9 if "IMPROVED" in output else (0.5 if "baseline" in output else 0.4)
+    penalized = os.environ.get("EVOL_FAKE_PENALIZE_PROV", "")
+    if penalized and f"[prov={penalized}]" in output:
+        value = 0.1
+    elif os.environ.get("EVOL_FAKE_NOISY") == "1" and "IMPROVED" in output:
+        num = int(req["case"]["id"].rsplit("-", 1)[-1])
+        value = 1.0 if num % 2 == 0 else 0.2
     reply({"score": {"value": value, "reason": f"fake score for output len {len(output)}"}})
 
 if port == "knowledgebase":

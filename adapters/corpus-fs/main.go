@@ -72,6 +72,9 @@ type candidateRecord struct {
 	Rationale string       `json:"rationale,omitempty"`
 	Strategy  string       `json:"strategy,omitempty"`
 	TS        string       `json:"ts,omitempty"`
+	// Provider is the executor provider URI the scores were produced
+	// under (model-dimension sweep rows always carry one).
+	Provider string `json:"provider,omitempty"`
 	// Fixtures round-trips verbatim (optional {cassette_dir} on
 	// promoted candidates; see spec/port-corpus.md).
 	Fixtures json.RawMessage `json:"fixtures,omitempty"`
@@ -313,7 +316,9 @@ func handleTabu(root string, raw []byte) (any, error) {
 	seen := make(map[string]bool)
 	entries := make([]tabuEntry, 0, len(lines))
 	for _, l := range lines {
-		if l.Verdict == "accepted" {
+		// Accepted rows are not tabu; evidence rows (provider sweep,
+		// baseline sweeps) are observations, not rejections.
+		if l.Verdict == "accepted" || l.Verdict == "evidence" {
 			continue
 		}
 		key := l.Strategy + "\x00" + l.Rationale
@@ -357,6 +362,12 @@ func handleHistory(root string, raw []byte) (any, error) {
 	best := make(map[int]historyEntry)
 	order := make([]int, 0)
 	for _, l := range lines {
+		// Evidence rows (provider sweeps) are observations under other
+		// providers — mixing them into per-generation bests would let a
+		// stronger secondary model masquerade as loop progress.
+		if l.Verdict == "evidence" {
+			continue
+		}
 		gen := l.Generation.Number
 		var sum float64
 		for _, s := range l.Scores {
