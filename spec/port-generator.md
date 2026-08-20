@@ -35,6 +35,7 @@ Response:
 | `candidates[].body` | string | full revised body |
 | `candidates[].rationale` | string | why this revision should score better |
 | `candidates[].strategy` | string | free-form strategy label, e.g. `tighten`, `add-example`, `reorder` |
+| `candidates[].provider` | string | optional — resolved provider URI that produced this candidate, secrets stripped (added while INTERNAL DRAFT; consumed by model-comparison work) |
 
 ```json
 {"evol": "1", "port": "generator", "action": "propose",
