@@ -412,6 +412,15 @@ adapters remain pre-alpha: flags and layouts may change.
    was written from the spec text alone.
 4. Open a PR.
 
+## Sponsors
+
+evol is open-source and built in the open. If your organization depends
+on evol, consider sponsoring development via
+[GitHub Sponsors](https://github.com/sponsors/hop-top).
+
+- [Idea Crafters](https://ideacrafters.com)
+- [Les Experts AI](https://lesexperts.ai)
+
 ## License
 
 [MIT](LICENSE)
