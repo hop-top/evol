@@ -6,6 +6,9 @@ ports:
   artifactstore:
     cmd: [e2e/bin/artifact-fs]
     timeout_seconds: 30
+    # Config-provided adapter env; exported vars override on collision.
+    env:
+      EVOL_ARTIFACT_ROOT: e2e/artifacts
   generator:
     cmd: [e2e/bin/generator-llm]
     timeout_seconds: 300
@@ -15,6 +18,8 @@ ports:
   corpus:
     cmd: [e2e/bin/corpus-fs]
     timeout_seconds: 30
+    env:
+      EVOL_CORPUS_ROOT: e2e/.corpus
   # Fallback scorer (stdlib python; mirrors e2e/contracts/commit-subject.yaml).
   # Swap to [e2e/bin/scorer-eva] once an eva build with standalone contract
   # mode is installed — see RUNBOOK "Scorer note".

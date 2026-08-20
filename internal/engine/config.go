@@ -11,12 +11,12 @@ import (
 // PortConfig binds one port to an adapter command.
 type PortConfig struct {
 	// Cmd is the adapter argv; Cmd[0] is the executable.
-	Cmd []string `mapstructure:"cmd" json:"cmd"`
+	Cmd []string `yaml:"cmd" json:"cmd"`
 	// TimeoutSeconds bounds each call; 0 uses the port default.
-	TimeoutSeconds int `mapstructure:"timeout_seconds" json:"timeout_seconds,omitempty"`
+	TimeoutSeconds int `yaml:"timeout_seconds" json:"timeout_seconds,omitempty"`
 	// Env is adapter environment provided by config; a variable set in
 	// the engine's process environment overrides the same key here.
-	Env map[string]string `mapstructure:"env" json:"env,omitempty"`
+	Env map[string]string `yaml:"env" json:"env,omitempty"`
 }
 
 func (p PortConfig) Client(name string) *port.Client {
@@ -32,62 +32,62 @@ func (p PortConfig) Client(name string) *port.Client {
 type Config struct {
 	// Artifact is the default artifact ref to evolve; the --artifact
 	// flag overrides it.
-	Artifact string `mapstructure:"artifact" json:"artifact"`
+	Artifact string `yaml:"artifact" json:"artifact"`
 
 	Ports struct {
-		ArtifactStore PortConfig `mapstructure:"artifactstore" json:"artifactstore"`
-		Generator     PortConfig `mapstructure:"generator" json:"generator"`
-		Executor      PortConfig `mapstructure:"executor" json:"executor"`
-		Corpus        PortConfig `mapstructure:"corpus" json:"corpus"`
+		ArtifactStore PortConfig `yaml:"artifactstore" json:"artifactstore"`
+		Generator     PortConfig `yaml:"generator" json:"generator"`
+		Executor      PortConfig `yaml:"executor" json:"executor"`
+		Corpus        PortConfig `yaml:"corpus" json:"corpus"`
 		// Scorer scores transcripts against cases (spec/port-scorer.md).
-		Scorer PortConfig `mapstructure:"scorer" json:"scorer"`
+		Scorer PortConfig `yaml:"scorer" json:"scorer"`
 		// KnowledgeBase is optional; leave cmd empty to disable.
-		KnowledgeBase PortConfig `mapstructure:"knowledgebase" json:"knowledgebase"`
+		KnowledgeBase PortConfig `yaml:"knowledgebase" json:"knowledgebase"`
 		// CaseGen is optional: the generator-port `synth` action for
 		// grounded synthetic case generation (`evol cases synth`).
-		CaseGen PortConfig `mapstructure:"casegen" json:"casegen,omitempty"`
+		CaseGen PortConfig `yaml:"casegen" json:"casegen,omitempty"`
 		// Audit is optional: the run ledger (spec/port-audit.md). With
 		// no cmd the engine runs unaudited and notes it once per run.
-		Audit PortConfig `mapstructure:"audit" json:"audit,omitempty"`
-	} `mapstructure:"ports" json:"ports"`
+		Audit PortConfig `yaml:"audit" json:"audit,omitempty"`
+	} `yaml:"ports" json:"ports"`
 
 	Thresholds struct {
 		// Delta is the required improvement over the baseline mean.
-		Delta float64 `mapstructure:"delta" json:"delta"`
+		Delta float64 `yaml:"delta" json:"delta"`
 		// Trials is how many times each case is run and scored;
 		// scores average across trials. Minimum 1.
-		Trials int `mapstructure:"trials" json:"trials"`
+		Trials int `yaml:"trials" json:"trials"`
 		// SigLevel is the paired-bootstrap significance level the
 		// acceptance gate requires in addition to the mean delta
 		// (p ≤ sig_level). Defaults to 0.05. Significance testing is
 		// automatically disabled below sigMinPairs paired cases —
 		// mean-only gating with a logged warning.
-		SigLevel float64 `mapstructure:"sig_level" json:"sig_level"`
+		SigLevel float64 `yaml:"sig_level" json:"sig_level"`
 		// SigSeed seeds the bootstrap resampler so p-values are
 		// reproducible. Defaults to 1.
-		SigSeed int64 `mapstructure:"sig_seed" json:"sig_seed"`
-	} `mapstructure:"thresholds" json:"thresholds"`
+		SigSeed int64 `yaml:"sig_seed" json:"sig_seed"`
+	} `yaml:"thresholds" json:"thresholds"`
 
 	Budget struct {
 		// Generations bounds the propose→evaluate loop. Minimum 1.
-		Generations int `mapstructure:"generations" json:"generations"`
+		Generations int `yaml:"generations" json:"generations"`
 		// MaxCandidates bounds candidates per generation. Minimum 1.
-		MaxCandidates int `mapstructure:"max_candidates" json:"max_candidates"`
-	} `mapstructure:"budget" json:"budget"`
+		MaxCandidates int `yaml:"max_candidates" json:"max_candidates"`
+	} `yaml:"budget" json:"budget"`
 
 	// Holdout names the corpus split used for gating. Defaults to
 	// "holdout".
-	Holdout string `mapstructure:"holdout" json:"holdout"`
+	Holdout string `yaml:"holdout" json:"holdout"`
 
 	// ExecutorMode is the env.mode hint sent to the Executor:
 	// replay, record, or live. Defaults to "replay".
-	ExecutorMode string `mapstructure:"executor_mode" json:"executor_mode"`
+	ExecutorMode string `yaml:"executor_mode" json:"executor_mode"`
 
 	// ExecutorProvider, when set, is forwarded as env.provider on every
 	// Executor run — a model/provider URI for the agent under test
 	// (e.g. claude://haiku, ollama://llama3.2:3b?base_url=…). Optional;
 	// interpretation belongs to the executor's run wrapper.
-	ExecutorProvider string `mapstructure:"executor_provider" json:"executor_provider,omitempty"`
+	ExecutorProvider string `yaml:"executor_provider" json:"executor_provider,omitempty"`
 
 	// ExecutorProviders, when set, sweeps the case × trial matrix once
 	// per provider URI and records per-provider results to the corpus.
@@ -95,13 +95,13 @@ type Config struct {
 	// candidate against the baseline under it alone (fair A/B); every
 	// other provider's scores are recorded as evidence rows only.
 	// Overrides ExecutorProvider.
-	ExecutorProviders []string `mapstructure:"executor_providers" json:"executor_providers,omitempty"`
+	ExecutorProviders []string `yaml:"executor_providers" json:"executor_providers,omitempty"`
 
 	// FixturesDir, when set, is recorded with the promoted candidate's
 	// corpus entry as fixtures.cassette_dir — the operator-configured
 	// location of the recorded environment (adapter-agnostic; the
 	// engine never inspects it).
-	FixturesDir string `mapstructure:"fixtures_dir" json:"fixtures_dir,omitempty"`
+	FixturesDir string `yaml:"fixtures_dir" json:"fixtures_dir,omitempty"`
 
 	// Promotion configures post-promotion behavior.
 	Promotion struct {
@@ -112,8 +112,8 @@ type Config struct {
 		// and never fails the promotion — the improvement is already
 		// real. No tool is privileged: publish steps, capability
 		// installs, notifications are all just argv.
-		Hook []string `mapstructure:"hook" json:"hook,omitempty"`
-	} `mapstructure:"promotion" json:"promotion,omitempty"`
+		Hook []string `yaml:"hook" json:"hook,omitempty"`
+	} `yaml:"promotion" json:"promotion,omitempty"`
 }
 
 // primaryProvider is the provider URI the gate compares under: the

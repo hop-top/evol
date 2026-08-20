@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"hop.top/evol/internal/engine"
+	kitconfig "hop.top/kit/go/core/config"
 )
 
 // Exit codes for `evol run`.
@@ -61,13 +61,13 @@ func init() {
 }
 
 func loadConfig(path string) (*engine.Config, error) {
-	v := viper.New()
-	v.SetConfigFile(path)
-	if err := v.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("config %s: %w", path, err)
-	}
+	// kit's layered loader is yaml.v3-based, so map keys (notably
+	// ports.<name>.env variable names) keep their case — viper
+	// lowercases them.
 	var cfg engine.Config
-	if err := v.Unmarshal(&cfg); err != nil {
+	if err := kitconfig.Load(&cfg, kitconfig.Options{
+		ExtraConfigPaths: []string{path},
+	}); err != nil {
 		return nil, fmt.Errorf("config %s: %w", path, err)
 	}
 	return &cfg, nil
