@@ -11,3 +11,11 @@ bin/corpus-fs
 bin/scorer-eva
 bin/ctxt-kb
 bin/runner-xrr
+bin/casegen-llm
+bin/audit-fs
+bin/audit-tlc
+bin/ben-gate
+bin/cases-crtx
+bin/routing-emit
+# run logs
+*.log
