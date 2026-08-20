@@ -40,6 +40,9 @@ type Config struct {
 		Scorer PortConfig `mapstructure:"scorer" json:"scorer"`
 		// KnowledgeBase is optional; leave cmd empty to disable.
 		KnowledgeBase PortConfig `mapstructure:"knowledgebase" json:"knowledgebase"`
+		// CaseGen is optional: the generator-port `synth` action for
+		// grounded synthetic case generation (`evol cases synth`).
+		CaseGen PortConfig `mapstructure:"casegen" json:"casegen,omitempty"`
 	} `mapstructure:"ports" json:"ports"`
 
 	Thresholds struct {

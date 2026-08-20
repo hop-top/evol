@@ -38,6 +38,7 @@ type Engine struct {
 	corpus    *port.Client
 	scorer    *port.Client
 	kb        *port.Client
+	casegen   *port.Client
 
 	// Log receives progress lines; defaults to io.Discard.
 	Log io.Writer
@@ -56,6 +57,7 @@ func New(cfg Config) *Engine {
 		corpus:    cfg.Ports.Corpus.client("corpus"),
 		scorer:    cfg.Ports.Scorer.client("scorer"),
 		kb:        cfg.Ports.KnowledgeBase.client("knowledgebase"),
+		casegen:   cfg.Ports.CaseGen.client("generator"),
 		Log:       io.Discard,
 	}
 }

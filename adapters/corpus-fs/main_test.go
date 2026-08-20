@@ -356,3 +356,94 @@ func TestTabuAndHistoryIgnoreEvidenceRows(t *testing.T) {
 		t.Errorf("history best = %v, want the rejected 0.4 — a 0.99 evidence row must not masquerade as progress", gens[0])
 	}
 }
+
+func TestAddCasesDedupAndQuarantineExclusion(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("EVOL_CORPUS_ROOT", root)
+	seed(t, root, casesFile,
+		`{"id":"g1","input":"existing input","expected":"existing expected","split":"train","source":"golden"}`)
+
+	add := `{"evol":"1","port":"corpus","action":"add-cases","artifact_ref":"` + ref + `",
+	 "cases":[
+	   {"input":"existing input","expected":"existing expected","split":"train","source":"synthetic","quarantined":true},
+	   {"input":"new synthesized input","expected":"new expected","split":"train","source":"synthetic","quarantined":true},
+	   {"input":"new synthesized input","expected":"new expected","split":"train","source":"synthetic","quarantined":true}]}`
+	resp, err := call(t, add)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var added, dups int
+	var ids []string
+	mustUnmarshal(t, resp["added"], &added)
+	mustUnmarshal(t, resp["duplicates"], &dups)
+	mustUnmarshal(t, resp["ids"], &ids)
+	if added != 1 || dups != 2 {
+		t.Fatalf("added=%d duplicates=%d, want 1/2 (content dedup vs existing + within request)", added, dups)
+	}
+	if len(ids) != 1 || !strings.HasPrefix(ids[0], "syn-") {
+		t.Fatalf("ids = %v, want one deterministic syn- id", ids)
+	}
+
+	// Quarantined case must NOT be served by `cases`...
+	resp, err = call(t, `{"evol":"1","port":"corpus","action":"cases","artifact_ref":"`+ref+`","split":"train"}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var cases []caseEntry
+	mustUnmarshal(t, resp["cases"], &cases)
+	if len(cases) != 1 || cases[0].ID != "g1" {
+		t.Fatalf("cases = %+v, want only the golden case while quarantined", cases)
+	}
+
+	// ...until promoted.
+	resp, err = call(t, `{"evol":"1","port":"corpus","action":"promote-cases","artifact_ref":"`+ref+`",
+	 "ids":["`+ids[0]+`","nope-404"]}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var promoted int
+	var missing []string
+	mustUnmarshal(t, resp["promoted"], &promoted)
+	mustUnmarshal(t, resp["missing"], &missing)
+	if promoted != 1 || len(missing) != 1 || missing[0] != "nope-404" {
+		t.Fatalf("promoted=%d missing=%v, want 1/[nope-404]", promoted, missing)
+	}
+	resp, err = call(t, `{"evol":"1","port":"corpus","action":"cases","artifact_ref":"`+ref+`","split":"train"}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustUnmarshal(t, resp["cases"], &cases)
+	if len(cases) != 2 {
+		t.Fatalf("cases after promote = %d, want 2", len(cases))
+	}
+
+	// Promote is idempotent: re-promoting reports 0.
+	resp, err = call(t, `{"evol":"1","port":"corpus","action":"promote-cases","artifact_ref":"`+ref+`","ids":["`+ids[0]+`"]}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustUnmarshal(t, resp["promoted"], &promoted)
+	if promoted != 0 {
+		t.Fatalf("re-promote promoted=%d, want 0", promoted)
+	}
+}
+
+func TestAddCasesRequiresInput(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("EVOL_CORPUS_ROOT", root)
+	_, err := call(t, `{"evol":"1","port":"corpus","action":"add-cases","artifact_ref":"`+ref+`",
+	 "cases":[{"expected":"only expected"}]}`)
+	if err == nil || !strings.Contains(err.Error(), "input is required") {
+		t.Fatalf("err = %v, want input-required adapter error", err)
+	}
+}
+
+func mustUnmarshal(t *testing.T, raw json.RawMessage, into any) {
+	t.Helper()
+	if raw == nil {
+		t.Fatal("missing response field")
+	}
+	if err := json.Unmarshal(raw, into); err != nil {
+		t.Fatal(err)
+	}
+}

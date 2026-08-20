@@ -51,6 +51,15 @@ type caseEntry struct {
 	Expected string `json:"expected"`
 	Split    string `json:"split,omitempty"`
 	Source   string `json:"source,omitempty"`
+	// Quarantined cases (synthetic/mined intake) are excluded from
+	// `cases` responses until promoted; see spec/port-corpus.md.
+	Quarantined bool `json:"quarantined,omitempty"`
+}
+
+// contentKey is the dedup identity of a case: its input + expected.
+func contentKey(c caseEntry) string {
+	sum := sha256.Sum256([]byte(c.Input + "\x00" + c.Expected))
+	return hex.EncodeToString(sum[:])
 }
 
 type scoreEntry struct {
@@ -136,6 +145,10 @@ func run(stdin interface{ Read([]byte) (int, error) }, stdout interface{ Write([
 		resp, err = handleTabu(root, raw)
 	case "corrections":
 		resp, err = handleCorrections(root, raw)
+	case "add-cases":
+		resp, err = handleAddCases(root, raw)
+	case "promote-cases":
+		resp, err = handlePromoteCases(root, raw)
 	case "history":
 		resp, err = handleHistory(root, raw)
 	default:
@@ -245,11 +258,13 @@ func handleCases(root string, raw []byte) (any, error) {
 	seen := make(map[string]bool)
 	cases := make([]caseEntry, 0, len(all))
 	for _, c := range all {
+		if c.Quarantined {
+			continue
+		}
 		if req.Split != "" && c.Split != req.Split {
 			continue
 		}
-		sum := sha256.Sum256([]byte(c.Input + "\x00" + c.Expected))
-		key := hex.EncodeToString(sum[:])
+		key := contentKey(c)
 		if seen[key] {
 			continue
 		}
@@ -295,6 +310,135 @@ func handleRecord(root string, raw []byte) (any, error) {
 	}
 
 	return envelope{contractVersion, portName, "record"}, nil
+}
+
+func handleAddCases(root string, raw []byte) (any, error) {
+	var req struct {
+		ArtifactRef string      `json:"artifact_ref"`
+		Cases       []caseEntry `json:"cases"`
+	}
+	if err := json.Unmarshal(raw, &req); err != nil {
+		return nil, fmt.Errorf("decode add-cases request: %w", err)
+	}
+	dir, err := artifactDir(root, req.ArtifactRef)
+	if err != nil {
+		return nil, err
+	}
+	existing, err := readJSONL[caseEntry](filepath.Join(dir, casesFile))
+	if err != nil {
+		return nil, err
+	}
+	known := make(map[string]bool, len(existing))
+	usedIDs := make(map[string]bool, len(existing))
+	for _, c := range existing {
+		known[contentKey(c)] = true
+		usedIDs[c.ID] = true
+	}
+
+	added := make([]caseEntry, 0, len(req.Cases))
+	ids := make([]string, 0, len(req.Cases))
+	duplicates := 0
+	for _, c := range req.Cases {
+		if c.Input == "" {
+			return nil, errors.New("add-cases: case input is required")
+		}
+		key := contentKey(c)
+		if known[key] {
+			duplicates++
+			continue
+		}
+		known[key] = true
+		if c.ID == "" {
+			c.ID = "syn-" + key[:12]
+		}
+		if usedIDs[c.ID] {
+			duplicates++
+			continue
+		}
+		usedIDs[c.ID] = true
+		added = append(added, c)
+		ids = append(ids, c.ID)
+	}
+	if len(added) > 0 {
+		if err := appendJSONL(filepath.Join(dir, casesFile), added); err != nil {
+			return nil, err
+		}
+	}
+
+	return struct {
+		envelope
+		Added      int      `json:"added"`
+		Duplicates int      `json:"duplicates"`
+		IDs        []string `json:"ids"`
+	}{envelope{contractVersion, portName, "add-cases"}, len(added), duplicates, ids}, nil
+}
+
+func handlePromoteCases(root string, raw []byte) (any, error) {
+	var req struct {
+		ArtifactRef string   `json:"artifact_ref"`
+		IDs         []string `json:"ids"`
+	}
+	if err := json.Unmarshal(raw, &req); err != nil {
+		return nil, fmt.Errorf("decode promote-cases request: %w", err)
+	}
+	if len(req.IDs) == 0 {
+		return nil, errors.New("promote-cases: ids is required")
+	}
+	dir, err := artifactDir(root, req.ArtifactRef)
+	if err != nil {
+		return nil, err
+	}
+	path := filepath.Join(dir, casesFile)
+	all, err := readJSONL[caseEntry](path)
+	if err != nil {
+		return nil, err
+	}
+
+	want := make(map[string]bool, len(req.IDs))
+	for _, id := range req.IDs {
+		want[id] = true
+	}
+	promoted := 0
+	for i := range all {
+		if want[all[i].ID] {
+			delete(want, all[i].ID)
+			if all[i].Quarantined {
+				all[i].Quarantined = false
+				promoted++
+			}
+		}
+	}
+	missing := make([]string, 0, len(want))
+	for id := range want {
+		missing = append(missing, id)
+	}
+	sort.Strings(missing)
+
+	if promoted > 0 {
+		// Atomic rewrite: temp file + rename.
+		var buf bytes.Buffer
+		for _, c := range all {
+			line, merr := json.Marshal(c)
+			if merr != nil {
+				return nil, fmt.Errorf("encode case: %w", merr)
+			}
+			buf.Write(line)
+			buf.WriteByte('\n')
+		}
+		tmp := path + ".tmp"
+		if err := os.WriteFile(tmp, buf.Bytes(), 0o640); err != nil { //nolint:gosec // corpus root by design
+			return nil, fmt.Errorf("write %s: %w", tmp, err)
+		}
+		if err := os.Rename(tmp, path); err != nil {
+			return nil, fmt.Errorf("rename %s: %w", tmp, err)
+		}
+	}
+
+	return struct {
+		envelope
+		Promoted int      `json:"promoted"`
+		Missing  []string `json:"missing"`
+	}{envelope{contractVersion, portName, "promote-cases"}, promoted, missing}, nil
 }
 
 func handleTabu(root string, raw []byte) (any, error) {

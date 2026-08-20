@@ -27,6 +27,13 @@ ports:
     cmd: [evol-adapter-scorer]
     timeout_seconds: 120
   # Optional: leave cmd out (or empty) to run without a knowledge base.
+  # casegen (optional): the generator-port `synth` action for grounded
+  # synthetic case generation (`evol cases synth`). Cases always land
+  # quarantined; promote after review.
+  # casegen:
+  #   cmd: ["evol-adapter-casegen-llm"]
+  #   timeout_seconds: 300
+
   knowledgebase:
     cmd: [evol-adapter-kb]
     timeout_seconds: 30
