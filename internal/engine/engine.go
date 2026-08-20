@@ -121,7 +121,7 @@ func (e *Engine) Run(ctx context.Context, artifactRef string) (*Result, error) {
 	e.logf("baseline %s@%s: %.4f over %d case(s) × %d trial(s)",
 		artifact.Ref, artifact.Version, baselineMean, len(cases), e.cfg.Thresholds.Trials)
 
-	if evidence, err := e.sweep(ctx, staging, "baseline", artifact.Frontmatter, artifact.Body, cases); err != nil {
+	if evidence, err := e.sweep(ctx, staging, "baseline", artifact.Frontmatter, artifact.Body, "", cases); err != nil {
 		return nil, err
 	} else if len(evidence) > 0 {
 		// Generation 0 holds baseline sweep evidence.
@@ -177,7 +177,7 @@ func (e *Engine) Run(ctx context.Context, artifactRef string) (*Result, error) {
 				result.BestScore = candMean
 			}
 
-			outcome := CandidateOutcome{ID: cand.ID, Scores: scores, Provider: primary}
+			outcome := CandidateOutcome{ID: cand.ID, Scores: scores, Strategy: cand.Strategy, Provider: primary}
 			switch {
 			case allFailed(scores):
 				outcome.Verdict = VerdictFailed
@@ -221,7 +221,7 @@ func (e *Engine) Run(ctx context.Context, artifactRef string) (*Result, error) {
 			e.logf("generation %d: candidate %s (%s) mean %.4f → %s",
 				gen, cand.ID, cand.Strategy, candMean, outcome.Verdict)
 			outcomes = append(outcomes, outcome)
-			evidence, evErr := e.sweep(ctx, staging, cand.ID, cand.Frontmatter, cand.Body, cases)
+			evidence, evErr := e.sweep(ctx, staging, cand.ID, cand.Frontmatter, cand.Body, cand.Strategy, cases)
 			if evErr != nil {
 				return nil, evErr
 			}
@@ -322,7 +322,7 @@ func (e *Engine) evaluate(ctx context.Context, staging, id, frontmatter, body, p
 // sweep scores one document under every secondary provider and shapes
 // the results as evidence outcomes (model-dimension sweep). Evidence is
 // recorded for routing decisions downstream; it never gates.
-func (e *Engine) sweep(ctx context.Context, staging, id, frontmatter, body string, cases []Case) ([]CandidateOutcome, error) {
+func (e *Engine) sweep(ctx context.Context, staging, id, frontmatter, body, strategy string, cases []Case) ([]CandidateOutcome, error) {
 	secondaries := e.cfg.secondaryProviders()
 	if len(secondaries) == 0 {
 		return nil, nil
@@ -337,6 +337,7 @@ func (e *Engine) sweep(ctx context.Context, staging, id, frontmatter, body strin
 		outcomes = append(outcomes, CandidateOutcome{
 			ID:        id,
 			Scores:    scores,
+			Strategy:  strategy,
 			Verdict:   VerdictEvidence,
 			Rationale: "provider sweep evidence; not gated",
 			Provider:  provider,

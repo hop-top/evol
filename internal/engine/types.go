@@ -94,10 +94,13 @@ type Fixtures struct {
 // CandidateOutcome is one candidate's evaluated result within a
 // generation, shaped for Corpus record.
 type CandidateOutcome struct {
-	ID        string      `json:"id"`
-	Scores    []CaseScore `json:"scores"`
-	Verdict   string      `json:"verdict"`
-	Rationale string      `json:"rationale"`
+	ID     string      `json:"id"`
+	Scores []CaseScore `json:"scores"`
+	// Strategy is the generator strategy that produced the candidate;
+	// recorded so tabu entries keep their strategy dimension.
+	Strategy  string `json:"strategy,omitempty"`
+	Verdict   string `json:"verdict"`
+	Rationale string `json:"rationale"`
 	// Provider is the executor provider URI these scores were produced
 	// under; set whenever one is configured (sweep rows always carry it).
 	Provider string    `json:"provider,omitempty"`
