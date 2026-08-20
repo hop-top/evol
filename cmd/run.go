@@ -1,13 +1,12 @@
 package cmd
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 
 	"github.com/spf13/cobra"
 	"hop.top/evol/internal/engine"
-	"hop.top/kit/go/console/output"
 	kitconfig "hop.top/kit/go/core/config"
 )
 
@@ -78,7 +77,6 @@ func runRun(cmd *cobra.Command, _ []string) error {
 	configPath, _ := cmd.Flags().GetString("config")
 	artifact, _ := cmd.Flags().GetString("artifact")
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
-	format, _ := cmd.Flags().GetString("format")
 
 	fail := func(code int, err error) error {
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "evol: %v\n", err)
@@ -115,10 +113,10 @@ func runRun(cmd *cobra.Command, _ []string) error {
 	}
 
 	if dryRun {
-		return emit(cmd, format, map[string]any{
-			"dry_run":  true,
-			"artifact": cfg.Artifact,
-			"plan":     cfg,
+		return render(cmd, dryRunPlan{
+			Artifact: cfg.Artifact,
+			DryRun:   true,
+			Plan:     cfg,
 		})
 	}
 
@@ -129,11 +127,11 @@ func runRun(cmd *cobra.Command, _ []string) error {
 	switch {
 	case err == nil:
 		runPromotionHook(cmd, cfg, res)
-		return emit(cmd, format, res)
+		return render(cmd, (*runResult)(res))
 	case errors.Is(err, engine.ErrNoImprovement):
 		if res != nil {
-			if emitErr := emit(cmd, format, res); emitErr != nil {
-				return emitErr
+			if renderErr := render(cmd, (*runResult)(res)); renderErr != nil {
+				return renderErr
 			}
 		}
 		return fail(exitNoImprovement, err)
@@ -144,55 +142,33 @@ func runRun(cmd *cobra.Command, _ []string) error {
 	}
 }
 
-// emit renders payload in the requested format. Structured formats go
-// through kit's output registry; text falls back to the bespoke human
-// renderers (or indented JSON for payloads without one). The format
-// itself is validated once, in validateFormat, before any verb runs.
-func emit(cmd *cobra.Command, format string, payload any) error {
-	switch format {
-	case formatJSON:
-		return output.Render(cmd.OutOrStdout(), output.JSON, payload)
-	case formatYAML:
-		return emitYAML(cmd, payload)
-	default:
-		if res, ok := payload.(*engine.Result); ok {
-			printResult(cmd, res)
-			return nil
-		}
-		data, err := json.MarshalIndent(payload, "", "  ")
-		if err != nil {
-			return err
-		}
-		_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(data))
+// runResult renders *engine.Result through kit's output dispatch:
+// JSON/YAML from the engine's json tags, human via the run summary.
+type runResult engine.Result
+
+func (r *runResult) MarshalYAML() (any, error) { return jsonForm(r) }
+
+func (r *runResult) RenderHuman(w io.Writer) error {
+	_, _ = fmt.Fprintf(w, "artifact:  %s (baseline %s @ %.4f)\n",
+		r.ArtifactRef, r.BaselineVersion, r.BaselineScore)
+	_, _ = fmt.Fprintf(w, "explored:  %d candidate(s) over %d generation(s), best %.4f\n",
+		r.CandidatesTried, r.Generations, r.BestScore)
+	if r.Accepted {
+		_, _ = fmt.Fprintf(w, "promoted:  %s → version %s\n", r.AcceptedID, r.NewVersion)
 		return nil
 	}
+	_, _ = fmt.Fprintln(w, "promoted:  nothing (no candidate beat the gate)")
+	return nil
 }
 
-// emitYAML re-encodes payload through its JSON form before rendering so
-// YAML carries exactly the key names the JSON contract declares (json
-// struct tags, omitempty included) — encoding structs directly would
-// smash-lowercase field names instead.
-func emitYAML(cmd *cobra.Command, payload any) error {
-	data, err := json.Marshal(payload)
-	if err != nil {
-		return err
-	}
-	var v any
-	if err := json.Unmarshal(data, &v); err != nil {
-		return err
-	}
-	return output.Render(cmd.OutOrStdout(), output.YAML, v)
+// dryRunPlan mirrors the retired map payload; field order preserves
+// the alphabetical key order maps marshaled with, keeping --dry-run
+// JSON byte-stable for story replays.
+type dryRunPlan struct {
+	Artifact string         `json:"artifact"`
+	DryRun   bool           `json:"dry_run"`
+	Plan     *engine.Config `json:"plan"`
 }
 
-func printResult(cmd *cobra.Command, res *engine.Result) {
-	out := cmd.OutOrStdout()
-	_, _ = fmt.Fprintf(out, "artifact:  %s (baseline %s @ %.4f)\n",
-		res.ArtifactRef, res.BaselineVersion, res.BaselineScore)
-	_, _ = fmt.Fprintf(out, "explored:  %d candidate(s) over %d generation(s), best %.4f\n",
-		res.CandidatesTried, res.Generations, res.BestScore)
-	if res.Accepted {
-		_, _ = fmt.Fprintf(out, "promoted:  %s → version %s\n", res.AcceptedID, res.NewVersion)
-		return
-	}
-	_, _ = fmt.Fprintln(out, "promoted:  nothing (no candidate beat the gate)")
-}
+func (d dryRunPlan) MarshalYAML() (any, error)     { return jsonForm(d) }
+func (d dryRunPlan) RenderHuman(w io.Writer) error { return renderHumanJSON(w, d) }

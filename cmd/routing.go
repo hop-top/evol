@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -50,6 +51,29 @@ type providerStat struct {
 	N         int     `json:"n"`
 }
 
+// routingReport is the routing adapter's emit response, rendered
+// through kit's output dispatch.
+type routingReport struct {
+	Written string         `json:"written"`
+	Entries []routingEntry `json:"entries"`
+}
+
+type routingEntry struct {
+	Alias  string  `json:"alias"`
+	Model  string  `json:"model"`
+	Weight float64 `json:"weight"`
+}
+
+func (r routingReport) MarshalYAML() (any, error) { return jsonForm(r) }
+
+func (r routingReport) RenderHuman(w io.Writer) error {
+	_, _ = fmt.Fprintf(w, "pool written: %s (%d entries)\n", r.Written, len(r.Entries))
+	for _, e := range r.Entries {
+		_, _ = fmt.Fprintf(w, "  %-24s %-28s %.2f\n", e.Alias, e.Model, e.Weight)
+	}
+	return nil
+}
+
 func runRoutingEmit(cmd *cobra.Command, _ []string) error {
 	fail := func(err error) error {
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "evol: %v\n", err)
@@ -79,14 +103,7 @@ func runRoutingEmit(cmd *cobra.Command, _ []string) error {
 		return fail(err)
 	}
 	client := &port.Client{Port: "routing", Cmd: argv}
-	var resp struct {
-		Written string `json:"written"`
-		Entries []struct {
-			Alias  string  `json:"alias"`
-			Model  string  `json:"model"`
-			Weight float64 `json:"weight"`
-		} `json:"entries"`
-	}
+	var resp routingReport
 	err = client.Call(cmd.Context(), "emit", map[string]any{
 		"artifact_ref": artifact,
 		"evidence":     stats,
@@ -95,16 +112,7 @@ func runRoutingEmit(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fail(err)
 	}
-
-	format, _ := cmd.Flags().GetString("format")
-	if format != formatText {
-		return emit(cmd, format, resp)
-	}
-	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "pool written: %s (%d entries)\n", resp.Written, len(resp.Entries))
-	for _, e := range resp.Entries {
-		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %-24s %-28s %.2f\n", e.Alias, e.Model, e.Weight)
-	}
-	return nil
+	return render(cmd, resp)
 }
 
 func routingArgv(cmd *cobra.Command) ([]string, error) {

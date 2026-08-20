@@ -314,9 +314,11 @@ precondition failed · `3` config or adapter error. Other verbs reuse
 them; notably `cases synth` exits `2` when the knowledge base yields no
 grounding.
 
-Every verb takes `--format` (`text`, `json`, `yaml`). Any other value
-is refused with exit `3` and a message naming the accepted formats —
-never silently coerced to the text table.
+Every verb speaks kit's output contract: `--format` (`json`, `yaml`,
+`table`, `csv`, `text`, `human` — the default), plus `--output`/`-o`,
+`--cols`, `--template`, and `--format-help`. An unknown format is
+refused with exit `3` and a message naming the accepted values — never
+silently coerced to the human view.
 
 On promotion, a configurable hook (`promotion.hook`) hands off to any
 publisher with `EVOL_PROMOTED_REF`, `EVOL_PROMOTED_VERSION`, and

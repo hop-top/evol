@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -35,7 +36,6 @@ func init() {
 
 func runTargets(cmd *cobra.Command, _ []string) error {
 	configPath, _ := cmd.Flags().GetString("config")
-	format, _ := cmd.Flags().GetString("format")
 
 	fail := func(err error) error {
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "evol: %v\n", err)
@@ -58,18 +58,19 @@ func runTargets(cmd *cobra.Command, _ []string) error {
 		return fail(err)
 	}
 
-	if format != formatText {
-		return emit(cmd, format, rows)
-	}
-	printTargets(cmd, rows)
-	return nil
+	return render(cmd, targetRows(rows))
 }
 
-func printTargets(cmd *cobra.Command, rows []engine.TargetRow) {
-	out := cmd.OutOrStdout()
+// targetRows renders []engine.TargetRow through kit's output dispatch:
+// JSON/YAML from the engine's json tags, human via the legacy table.
+type targetRows []engine.TargetRow
+
+func (rows targetRows) MarshalYAML() (any, error) { return jsonForm(rows) }
+
+func (rows targetRows) RenderHuman(out io.Writer) error {
 	if len(rows) == 0 {
 		_, _ = fmt.Fprintln(out, "no artifacts found")
-		return
+		return nil
 	}
 	_, _ = fmt.Fprintf(out, "%-40s %-12s %4s  %-10s %-8s %-12s %-10s %s\n",
 		"REF", "KIND", "GENS", "LAST BEST", "TREND", "LAST-EVOLVED", "VERDICT", "STATUS")
@@ -100,6 +101,7 @@ func printTargets(cmd *cobra.Command, rows []engine.TargetRow) {
 		_, _ = fmt.Fprintf(out, "%-40s %-12s %4d  %-10s %-8s %-12s %-10s %s\n",
 			truncate(r.Ref, 40), r.Kind, r.Generations, score, trend, evolved, verdict, status)
 	}
+	return nil
 }
 
 func truncate(s string, n int) string {

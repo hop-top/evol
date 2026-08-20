@@ -26,9 +26,15 @@ func execRoot(t *testing.T, args ...string) (string, string, error) {
 
 // resetFlags restores every flag on the tree to its default: cobra flag
 // values persist across Execute calls, which leaks state between tests.
+// Slice flags need Replace — Set on a slice value appends, and feeding
+// it the "[]" DefValue string would plant a literal "[]" element.
 func resetFlags(c *cobra.Command) {
 	c.Flags().VisitAll(func(f *pflag.Flag) {
-		_ = f.Value.Set(f.DefValue)
+		if sv, ok := f.Value.(pflag.SliceValue); ok {
+			_ = sv.Replace(nil)
+		} else {
+			_ = f.Value.Set(f.DefValue)
+		}
 		f.Changed = false
 	})
 	for _, sub := range c.Commands() {

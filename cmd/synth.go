@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -68,16 +69,36 @@ func synthEngine(cmd *cobra.Command) (*engine.Engine, string, error) {
 		return nil, "", &codedError{code: exitConfigError, err: err}
 	}
 	if cfg.Artifact == "" {
-		return nil, "", &codedError{code: exitConfigError,
-			err: errors.New("an artifact ref is required (--artifact or config)")}
+		return nil, "", &codedError{
+			code: exitConfigError,
+			err:  errors.New("an artifact ref is required (--artifact or config)"),
+		}
 	}
 	eng := engine.New(*cfg)
 	eng.Log = cmd.ErrOrStderr()
 	return eng, cfg.Artifact, nil
 }
 
+// synthReport renders *engine.SynthResult through kit's output
+// dispatch. No bespoke terminal view existed; human keeps the
+// indented-JSON document.
+type synthReport engine.SynthResult
+
+func (s *synthReport) MarshalYAML() (any, error)     { return jsonForm(s) }
+func (s *synthReport) RenderHuman(w io.Writer) error { return renderHumanJSON(w, s) }
+
+// promotionReport mirrors the retired map payload; field order
+// preserves the alphabetical key order maps marshaled with.
+type promotionReport struct {
+	ArtifactRef string   `json:"artifact_ref"`
+	Missing     []string `json:"missing"`
+	Promoted    int      `json:"promoted"`
+}
+
+func (p promotionReport) MarshalYAML() (any, error)     { return jsonForm(p) }
+func (p promotionReport) RenderHuman(w io.Writer) error { return renderHumanJSON(w, p) }
+
 func runSynth(cmd *cobra.Command, _ []string) error {
-	format, _ := cmd.Flags().GetString("format")
 	count, _ := cmd.Flags().GetInt("count")
 
 	fail := func(code int, err error) error {
@@ -94,7 +115,7 @@ func runSynth(cmd *cobra.Command, _ []string) error {
 	res, err := eng.SynthesizeCases(cmd.Context(), artifact, count)
 	switch {
 	case err == nil:
-		if err := emit(cmd, format, res); err != nil {
+		if err := render(cmd, (*synthReport)(res)); err != nil {
 			return err
 		}
 		if res.Added > 0 {
@@ -111,7 +132,6 @@ func runSynth(cmd *cobra.Command, _ []string) error {
 }
 
 func runPromote(cmd *cobra.Command, _ []string) error {
-	format, _ := cmd.Flags().GetString("format")
 	rawIDs, _ := cmd.Flags().GetString("ids")
 
 	fail := func(code int, err error) error {
@@ -139,9 +159,9 @@ func runPromote(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fail(exitConfigError, err)
 	}
-	return emit(cmd, format, map[string]any{
-		"artifact_ref": artifact,
-		"promoted":     promoted,
-		"missing":      missing,
+	return render(cmd, promotionReport{
+		ArtifactRef: artifact,
+		Missing:     missing,
+		Promoted:    promoted,
 	})
 }

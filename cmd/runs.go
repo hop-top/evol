@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/spf13/cobra"
 	"hop.top/evol/internal/engine"
@@ -64,7 +65,6 @@ func auditFail(cmd *cobra.Command, err error) error {
 }
 
 func runRunsList(cmd *cobra.Command, _ []string) error {
-	format, _ := cmd.Flags().GetString("format")
 	subject, _ := cmd.Flags().GetString("subject")
 	limit, _ := cmd.Flags().GetInt("limit")
 
@@ -76,16 +76,10 @@ func runRunsList(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return auditFail(cmd, err)
 	}
-	if format != formatText {
-		return emit(cmd, format, runs)
-	}
-	printRuns(cmd, runs)
-	return nil
+	return render(cmd, runLedger(runs))
 }
 
 func runRunsShow(cmd *cobra.Command, args []string) error {
-	format, _ := cmd.Flags().GetString("format")
-
 	eng, err := auditEngine(cmd)
 	if err != nil {
 		return auditFail(cmd, err)
@@ -94,11 +88,7 @@ func runRunsShow(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return auditFail(cmd, err)
 	}
-	if format != formatText {
-		return emit(cmd, format, run)
-	}
-	printRun(cmd, run)
-	return nil
+	return render(cmd, runEntry(run))
 }
 
 func str(m map[string]any, key string) string {
@@ -108,11 +98,15 @@ func str(m map[string]any, key string) string {
 	return "-"
 }
 
-func printRuns(cmd *cobra.Command, runs []map[string]any) {
-	out := cmd.OutOrStdout()
+// runLedger renders the audit ledger rows through kit's output
+// dispatch. The rows are adapter-decoded JSON maps, so JSON/YAML carry
+// the wire keys verbatim; human is the legacy table.
+type runLedger []map[string]any
+
+func (runs runLedger) RenderHuman(out io.Writer) error {
 	if len(runs) == 0 {
 		_, _ = fmt.Fprintln(out, "no runs recorded")
-		return
+		return nil
 	}
 	_, _ = fmt.Fprintf(out, "%-38s %-32s %-16s %-10s %s\n",
 		"RUN-ID", "SUBJECT", "OUTCOME", "BEST", "STARTED")
@@ -127,10 +121,13 @@ func printRuns(cmd *cobra.Command, runs []map[string]any) {
 			str(r, "run_id"), str(r, "subject"), str(r, "outcome"),
 			best, str(r, "started_at"))
 	}
+	return nil
 }
 
-func printRun(cmd *cobra.Command, run map[string]any) {
-	out := cmd.OutOrStdout()
+// runEntry renders one audit ledger entry, steps included.
+type runEntry map[string]any
+
+func (run runEntry) RenderHuman(out io.Writer) error {
 	_, _ = fmt.Fprintf(out, "run:      %s\n", str(run, "run_id"))
 	_, _ = fmt.Fprintf(out, "subject:  %s\n", str(run, "subject"))
 	_, _ = fmt.Fprintf(out, "outcome:  %s\n", str(run, "outcome"))
@@ -146,7 +143,7 @@ func printRun(cmd *cobra.Command, run map[string]any) {
 	}
 	steps, ok := run["steps"].([]any)
 	if !ok || len(steps) == 0 {
-		return
+		return nil
 	}
 	_, _ = fmt.Fprintln(out, "steps:")
 	for _, s := range steps {
@@ -161,4 +158,5 @@ func printRun(cmd *cobra.Command, run map[string]any) {
 		_, _ = fmt.Fprintf(out, "  %-14s %-10s %s\n",
 			str(step, "name"), str(step, "status"), detail)
 	}
+	return nil
 }

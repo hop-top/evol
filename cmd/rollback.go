@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/spf13/cobra"
 )
@@ -40,11 +41,21 @@ type rollbackResult struct {
 	GitCommit   string `json:"git_commit,omitempty"`
 }
 
+func (r rollbackResult) MarshalYAML() (any, error) { return jsonForm(r) }
+
+func (r rollbackResult) RenderHuman(w io.Writer) error {
+	_, _ = fmt.Fprintf(w, "rolled back %s to %s", r.ArtifactRef, r.RestoredTo)
+	if r.GitCommit != "" {
+		_, _ = fmt.Fprintf(w, " (commit %.12s)", r.GitCommit)
+	}
+	_, _ = fmt.Fprintln(w)
+	return nil
+}
+
 func runRollback(cmd *cobra.Command, _ []string) error {
 	configPath, _ := cmd.Flags().GetString("config")
 	ref, _ := cmd.Flags().GetString("artifact")
 	to, _ := cmd.Flags().GetString("to")
-	format, _ := cmd.Flags().GetString("format")
 
 	fail := func(err error) error {
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "evol: %v\n", err)
@@ -93,13 +104,5 @@ func runRollback(cmd *cobra.Command, _ []string) error {
 	}
 
 	res := rollbackResult{ArtifactRef: ref, RestoredTo: restoreResp.Version, GitCommit: restoreResp.GitCommit}
-	if format != formatText {
-		return emit(cmd, format, res)
-	}
-	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "rolled back %s to %s", res.ArtifactRef, res.RestoredTo)
-	if res.GitCommit != "" {
-		_, _ = fmt.Fprintf(cmd.OutOrStdout(), " (commit %.12s)", res.GitCommit)
-	}
-	_, _ = fmt.Fprintln(cmd.OutOrStdout())
-	return nil
+	return render(cmd, res)
 }

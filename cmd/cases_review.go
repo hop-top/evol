@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -85,19 +86,49 @@ func corpusClient(cmd *cobra.Command) (*port.Client, string, error) {
 	// corpus port — demanding an executor/generator config to list
 	// cases would be hostile.
 	if cfg.Artifact == "" {
-		return nil, "", &codedError{code: exitConfigError,
-			err: errors.New("an artifact ref is required (--artifact or config)")}
+		return nil, "", &codedError{
+			code: exitConfigError,
+			err:  errors.New("an artifact ref is required (--artifact or config)"),
+		}
 	}
 	client := cfg.Ports.Corpus.Client("corpus")
 	if !client.Configured() {
-		return nil, "", &codedError{code: exitConfigError,
-			err: errors.New("no corpus port configured (ports.corpus.cmd)")}
+		return nil, "", &codedError{
+			code: exitConfigError,
+			err:  errors.New("no corpus port configured (ports.corpus.cmd)"),
+		}
 	}
 	return client, cfg.Artifact, nil
 }
 
+// casesReport mirrors the retired map payload; field order preserves
+// the alphabetical key order maps marshaled with, keeping JSON
+// byte-stable for story replays.
+type casesReport struct {
+	ArtifactRef string       `json:"artifact_ref"`
+	Cases       []reviewCase `json:"cases"`
+}
+
+func (c casesReport) MarshalYAML() (any, error) { return jsonForm(c) }
+
+func (c casesReport) RenderHuman(w io.Writer) error {
+	if len(c.Cases) == 0 {
+		_, _ = fmt.Fprintln(w, "no cases")
+		return nil
+	}
+	_, _ = fmt.Fprintf(w, "%-22s %-8s %-10s %-5s %s\n", "ID", "SPLIT", "SOURCE", "QUAR", "INPUT")
+	for _, cs := range c.Cases {
+		quar := "-"
+		if cs.Quarantined {
+			quar = "yes"
+		}
+		_, _ = fmt.Fprintf(w, "%-22s %-8s %-10s %-5s %s\n",
+			cs.ID, orDash(cs.Split), orDash(cs.Source), quar, truncateCase(cs.Input, 60))
+	}
+	return nil
+}
+
 func runCasesList(cmd *cobra.Command, _ []string) error {
-	format, _ := cmd.Flags().GetString("format")
 	onlyQuarantined, _ := cmd.Flags().GetBool("quarantined")
 	all, _ := cmd.Flags().GetBool("all")
 
@@ -134,32 +165,22 @@ func runCasesList(cmd *cobra.Command, _ []string) error {
 		cases = kept
 	}
 
-	if format != formatText {
-		return emit(cmd, format, map[string]any{
-			"artifact_ref": artifact,
-			"cases":        cases,
-		})
-	}
-
-	if len(cases) == 0 {
-		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "no cases")
-		return nil
-	}
-	w := cmd.OutOrStdout()
-	_, _ = fmt.Fprintf(w, "%-22s %-8s %-10s %-5s %s\n", "ID", "SPLIT", "SOURCE", "QUAR", "INPUT")
-	for _, c := range cases {
-		quar := "-"
-		if c.Quarantined {
-			quar = "yes"
-		}
-		_, _ = fmt.Fprintf(w, "%-22s %-8s %-10s %-5s %s\n",
-			c.ID, orDash(c.Split), orDash(c.Source), quar, truncateCase(c.Input, 60))
-	}
-	return nil
+	return render(cmd, casesReport{ArtifactRef: artifact, Cases: cases})
 }
 
+// correctionReport mirrors the retired map payload; field order
+// preserves the alphabetical key order maps marshaled with.
+type correctionReport struct {
+	Added       int      `json:"added"`
+	ArtifactRef string   `json:"artifact_ref"`
+	Duplicates  int      `json:"duplicates"`
+	IDs         []string `json:"ids"`
+}
+
+func (c correctionReport) MarshalYAML() (any, error)     { return jsonForm(c) }
+func (c correctionReport) RenderHuman(w io.Writer) error { return renderHumanJSON(w, c) }
+
 func runCasesCorrect(cmd *cobra.Command, _ []string) error {
-	format, _ := cmd.Flags().GetString("format")
 	caseID, _ := cmd.Flags().GetString("case-id")
 	input, _ := cmd.Flags().GetString("input")
 	expected, _ := cmd.Flags().GetString("expected")
@@ -204,11 +225,11 @@ func runCasesCorrect(cmd *cobra.Command, _ []string) error {
 		return fail(err)
 	}
 
-	if err := emit(cmd, format, map[string]any{
-		"artifact_ref": artifact,
-		"added":        resp.Added,
-		"duplicates":   resp.Duplicates,
-		"ids":          resp.IDs,
+	if err := render(cmd, correctionReport{
+		Added:       resp.Added,
+		ArtifactRef: artifact,
+		Duplicates:  resp.Duplicates,
+		IDs:         resp.IDs,
 	}); err != nil {
 		return err
 	}

@@ -37,7 +37,9 @@ func TestFormatUnknownRefused(t *testing.T) {
 			if !strings.Contains(errOut, `unknown output format "xml"`) {
 				t.Errorf("stderr missing refusal:\n%s", errOut)
 			}
-			if !strings.Contains(errOut, "text, json, yaml") {
+			// The accepted set is kit's output registry, not a
+			// hand-rolled list.
+			if !strings.Contains(errOut, "csv, human, json, table, text, yaml") {
 				t.Errorf("stderr missing accepted values:\n%s", errOut)
 			}
 			if strings.Contains(out, "REF") {
