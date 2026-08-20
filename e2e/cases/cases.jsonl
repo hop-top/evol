@@ -1,12 +1,16 @@
-{"id":"c01","input":"added retry with exponential backoff to the fetch client in the http module","split":"train"}
-{"id":"c02","input":"fixed nil pointer dereference when the config file is missing at startup","split":"train"}
-{"id":"c03","input":"renamed module storage to store, updating all import paths (breaking change)","split":"train"}
-{"id":"c04","input":"bumped golangci-lint from 2.8.0 to 2.12.2 in CI","split":"train"}
-{"id":"c05","input":"documented the cassette format matching rules in the spec directory","split":"train"}
-{"id":"c06","input":"extracted duplicated pagination logic from three handlers into a shared helper","split":"train"}
-{"id":"c07","input":"sped up the indexer by batching writes, roughly 4x fewer fsync calls","split":"train"}
-{"id":"c08","input":"added table-driven tests covering the timeout and cancellation paths of the runner","split":"train"}
-{"id":"c09","input":"fixed off-by-one in the sliding window rate limiter that allowed one extra request","split":"holdout"}
-{"id":"c10","input":"added a --format json flag to the list command","split":"holdout"}
-{"id":"c11","input":"removed the deprecated v1 config loader and its migration shims (breaking change)","split":"holdout"}
-{"id":"c12","input":"reordered dockerfile layers so dependency downloads cache across builds","split":"holdout"}
+{"id":"c01","input":"added retry with exponential backoff to fetchWithRetry in the http client component","split":"train","checks":["backtick_identifiers","kebab_scope"]}
+{"id":"c02","input":"fixed nil pointer dereference in loadConfig when the config file is missing at startup","split":"train","checks":["backtick_identifiers"]}
+{"id":"c03","input":"renamed module storage to store, updating all import paths (breaking change)","split":"train","checks":["breaking_bang","breaking_trailer","backtick_identifiers"]}
+{"id":"c04","input":"bumped golangci-lint from 2.8.0 to 2.12.2","split":"train","checks":["type_build","kebab_scope"]}
+{"id":"c05","input":"updated the continuous integration workflow to cache Go modules between runs","split":"train","checks":["type_ci","kebab_scope"]}
+{"id":"c06","input":"rewrote the README quick start section for the new config format, no code changed","split":"train","checks":["type_docs"]}
+{"id":"c07","input":"extracted the retry logic into a new package named backoff; explain the motivation in the body","split":"train","checks":["telegraphese_body","backtick_identifiers"]}
+{"id":"c08","input":"dropped support for the legacy v1 config format (breaking change); document the migration in the body","split":"train","checks":["breaking_bang","breaking_trailer","telegraphese_body"]}
+{"id":"c09","input":"added rate limiting to the public endpoints of the gateway service component","split":"train","checks":["kebab_scope"]}
+{"id":"c10","input":"fixed a race condition in session cache eviction; describe the root cause in the body","split":"train","checks":["telegraphese_body"]}
+{"id":"c11","input":"replaced the hand rolled argument parser with the stdlib flag package in cmd/serve","split":"train","checks":["backtick_identifiers","kebab_scope"]}
+{"id":"h01","input":"added exponential backoff to retryTransport and wired it into the http client component","split":"holdout","checks":["backtick_identifiers","kebab_scope"]}
+{"id":"h02","input":"removed the deprecated LegacyAuth interface (breaking change); note the replacement in the body","split":"holdout","checks":["breaking_bang","breaking_trailer","telegraphese_body","backtick_identifiers"]}
+{"id":"h03","input":"corrected typos and refreshed the examples in the README only","split":"holdout","checks":["type_docs"]}
+{"id":"h04","input":"pinned the Go version in the continuous integration workflow and enabled the race detector","split":"holdout","checks":["type_ci","kebab_scope"]}
+{"id":"h05","input":"upgraded viper from 1.19.0 to 1.21.0; summarize the config loading changes in the body","split":"holdout","checks":["type_build","telegraphese_body","kebab_scope"]}

@@ -19,3 +19,8 @@ evaluators:
   - name: forbidden_phrases
     mode: binary
     banlist: ["generated", "co-authored", "ai", "assistant", "claude"]
+# NOTE: the discriminating HOUSE checks (backtick identifiers,
+# telegraphese body, breaking bang+trailer, type edges, kebab scope)
+# are per-case — carried in cases.jsonl "checks" and enforced by the
+# scorer (e2e/bin/score-commit.py). A static contract cannot express
+# per-case applicability; this contract stays the universal floor.

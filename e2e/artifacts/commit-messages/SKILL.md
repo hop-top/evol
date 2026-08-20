@@ -33,6 +33,7 @@ what assisted with it. The message is about the change itself.
 
 ## Notes
 
-Scopes are lowercase things like module or area names. Breaking changes
-get an exclamation mark after the type or scope. If unsure about the
-type, chore is usually safe. Try not to exceed limits.
+Scopes are lowercase things like module or area names. There is a house
+style covering how identifiers appear in subjects, how bodies are
+worded, and how breaking changes are marked — follow it. If unsure
+about the type, chore is usually safe. Try not to exceed limits.

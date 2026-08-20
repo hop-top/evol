@@ -67,6 +67,28 @@ Exit codes: 0 promoted · 1 no improvement · 2 gate precondition ·
 - Re-running step 5 starts from the improved artifact; tabu prevents
   re-proposing rejected strategies.
 
+## Eval calibration (measured, claude://haiku)
+
+The eval set discriminates on HOUSE rules (backtick identifiers,
+telegraphese bodies, breaking bang+trailer, type edges, kebab scopes)
+carried per-case in `cases.jsonl` `"checks"`; universal conventions are
+only a floor (a capable model passes them skill-free — the original
+five-check set scored a vague skill 1.0000 and left the gate no
+headroom). Preamble narration is tolerated by subject extraction in the
+scorer; discipline belongs to the runner prompt.
+
+Measured over the 5 holdout cases × 2 trials (`e2e/bin/calibrate.sh
+<skill> claude://haiku 2`):
+
+| Skill | Holdout mean |
+|---|---|
+| Baseline (vague about house rules) | 0.635 |
+| Hand-written variant stating the house rules | 0.910 |
+
+Headroom is real (+0.275 for exactly the content a good candidate would
+add), floor is not zero, and single-trial variance is ±0.1 — use ≥2
+trials when judging runs.
+
 ## Scorer note (observed at scaffold time)
 
 The default scorer is `e2e/bin/score-commit.py` — stdlib fallback
