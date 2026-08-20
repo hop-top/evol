@@ -105,6 +105,10 @@ type CandidateOutcome struct {
 	// under; set whenever one is configured (sweep rows always carry it).
 	Provider string    `json:"provider,omitempty"`
 	Fixtures *Fixtures `json:"fixtures,omitempty"`
+	// RecordedAt is stamped by the engine at record time (RFC3339, UTC).
+	// Selection reads it back as the artifact's last-evolution clock;
+	// nothing fingerprints or replays it, so determinism is unaffected.
+	RecordedAt string `json:"recorded_at,omitempty"`
 }
 
 // Result is the outcome of one engine run.

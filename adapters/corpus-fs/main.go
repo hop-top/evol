@@ -80,7 +80,9 @@ type candidateRecord struct {
 	Verdict   string       `json:"verdict"`
 	Rationale string       `json:"rationale,omitempty"`
 	Strategy  string       `json:"strategy,omitempty"`
-	TS        string       `json:"ts,omitempty"`
+	// RecordedAt is the engine's wall-clock stamp at record time
+	// (RFC3339); read back by `history` as the last-evolution clock.
+	RecordedAt string `json:"recorded_at,omitempty"`
 	// Provider is the executor provider URI the scores were produced
 	// under (model-dimension sweep rows always carry one).
 	Provider string `json:"provider,omitempty"`
@@ -485,6 +487,9 @@ type historyEntry struct {
 	Generation int     `json:"generation"`
 	BestScore  float64 `json:"best_score"`
 	Verdict    string  `json:"verdict"`
+	// RecordedAt is the latest recorded_at among the generation's
+	// non-evidence rows; empty for rows recorded before stamps existed.
+	RecordedAt string `json:"recorded_at,omitempty"`
 }
 
 func handleHistory(root string, raw []byte) (any, error) {
@@ -524,10 +529,20 @@ func handleHistory(root string, raw []byte) (any, error) {
 		cur, ok := best[gen]
 		if !ok {
 			order = append(order, gen)
+			cur = historyEntry{Generation: gen, BestScore: mean, Verdict: l.Verdict, RecordedAt: l.RecordedAt}
+		} else {
+			if mean > cur.BestScore {
+				cur.BestScore = mean
+				cur.Verdict = l.Verdict
+			}
+			// Latest stamp wins regardless of which candidate scored best:
+			// the question history answers is "when did this generation
+			// happen", not "when did its best row land".
+			if l.RecordedAt > cur.RecordedAt {
+				cur.RecordedAt = l.RecordedAt
+			}
 		}
-		if !ok || mean > cur.BestScore {
-			best[gen] = historyEntry{Generation: gen, BestScore: mean, Verdict: l.Verdict}
-		}
+		best[gen] = cur
 	}
 	sort.Ints(order)
 	generations := make([]historyEntry, 0, len(order))

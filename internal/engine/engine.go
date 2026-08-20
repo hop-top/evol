@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"hop.top/evol/internal/port"
 )
@@ -43,6 +44,10 @@ type Engine struct {
 	// Log receives progress lines; defaults to io.Discard.
 	Log io.Writer
 
+	// Now supplies wall-clock time for corpus record stamps; defaults to
+	// time.Now. Tests inject a fixed clock for determinism.
+	Now func() time.Time
+
 	// sigWarned dedups the small-sample significance warning per run.
 	sigWarned bool
 }
@@ -59,6 +64,7 @@ func New(cfg Config) *Engine {
 		kb:        cfg.Ports.KnowledgeBase.client("knowledgebase"),
 		casegen:   cfg.Ports.CaseGen.client("generator"),
 		Log:       io.Discard,
+		Now:       time.Now,
 	}
 }
 
@@ -466,6 +472,12 @@ func (e *Engine) propose(ctx context.Context, artifact Artifact, history []Score
 }
 
 func (e *Engine) record(ctx context.Context, artifact Artifact, generation int, outcomes []CandidateOutcome) error {
+	stamp := e.Now().UTC().Format(time.RFC3339)
+	for i := range outcomes {
+		if outcomes[i].RecordedAt == "" {
+			outcomes[i].RecordedAt = stamp
+		}
+	}
 	return e.corpus.Call(ctx, "record", map[string]any{
 		"generation": map[string]any{
 			"artifact_ref":     artifact.Ref,

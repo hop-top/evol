@@ -94,6 +94,38 @@ Response: empty object (envelope only).
 {"evol": "1", "port": "knowledgebase", "action": "append"}
 ```
 
+### `newest` *(optional)*
+
+Newest knowledge timestamp matching a query — the churn signal behind
+`evol run --select kb-churn` ("has knowledge moved since this artifact
+last evolved?"). Optional and additive: added post-publication under the
+[versioning rules](README.md#versioning--stability) (new optional
+actions are non-breaking; adapters that predate it answer with an
+adapter error and callers degrade).
+
+Request:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `query` | string | free-text query, typically the artifact ref |
+| `limit` | int? | how many matches to consider; adapter default if omitted |
+
+Response:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `ts` | string? | RFC3339 timestamp of the newest matching knowledge; absent or null when nothing matching carries a timestamp — never fabricated |
+
+```json
+{"evol": "1", "port": "knowledgebase", "action": "newest",
+ "query": "skills/commit-style"}
+```
+
+```json
+{"evol": "1", "port": "knowledgebase", "action": "newest",
+ "ts": "2026-08-20T02:08:22-04:00"}
+```
+
 ## Unavailability
 
 ```json

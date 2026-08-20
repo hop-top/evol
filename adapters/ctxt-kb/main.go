@@ -55,6 +55,9 @@ type response struct {
 	Unavailable bool      `json:"unavailable,omitempty"`
 	Passages    []passage `json:"passages,omitempty"`
 	Text        string    `json:"text,omitempty"`
+	// TS answers the optional `newest` action (RFC3339); omitted when no
+	// matching knowledge carries a timestamp.
+	TS *string `json:"ts,omitempty"`
 }
 
 // findResult mirrors the subset of `ctxt find --format json` output the
@@ -64,7 +67,11 @@ type findResult struct {
 		ID          string `json:"id"`
 		TextContent string `json:"text_content"`
 		RawContent  string `json:"raw_content"`
-		Metadata    struct {
+		// CreatedAt/UpdatedAt are RFC3339 stamps ctxt carries per object
+		// (verified against the live CLI); `newest` reads them.
+		CreatedAt string `json:"created_at"`
+		UpdatedAt string `json:"updated_at"`
+		Metadata  struct {
 			RRFScore float64 `json:"rrf_score"`
 		} `json:"metadata"`
 	} `json:"objects"`
@@ -109,13 +116,13 @@ func run(in io.Reader, out io.Writer) error {
 	resp := response{Evol: contractVersion, Port: portName, Action: req.Action}
 
 	switch req.Action {
-	case "search", "brief", "append":
+	case "search", "brief", "append", "newest":
 	default:
 		return fmt.Errorf("unknown action %q", req.Action)
 	}
 
-	if req.Action == "search" && req.Query == "" {
-		return fmt.Errorf("search: query is required")
+	if (req.Action == "search" || req.Action == "newest") && req.Query == "" {
+		return fmt.Errorf("%s: query is required", req.Action)
 	}
 	if req.Action == "brief" && req.Topic == "" {
 		return fmt.Errorf("brief: topic is required")
@@ -149,6 +156,13 @@ func run(in io.Reader, out io.Writer) error {
 			resp.Unavailable = true
 			return emit(out, resp)
 		}
+	case "newest":
+		ts, ok := a.newest(req.Query, req.Limit)
+		if !ok {
+			resp.Unavailable = true
+			return emit(out, resp)
+		}
+		resp.TS = ts
 	}
 
 	return emit(out, resp)
@@ -232,6 +246,50 @@ func (a adapter) append(text string, tags []string) bool {
 		return false
 	}
 	return true
+}
+
+// newest returns the max updated_at (falling back to created_at) among
+// objects matching the query — never fabricated: no timestamped match
+// answers a nil ts with ok=true, and daemon failures degrade to
+// unavailable like every other action.
+func (a adapter) newest(query string, limit int) (*string, bool) {
+	if limit <= 0 {
+		limit = defaultLimit
+	}
+	stdout, err := a.exec(a.callTimeout,
+		"find", query, "--format", "json", "--limit", strconv.Itoa(limit), "--no-hints", "--quiet")
+	if err != nil {
+		diag("newest: %v", err)
+		return nil, false
+	}
+	var res findResult
+	if err := json.Unmarshal(stdout, &res); err != nil {
+		diag("newest: unparseable find output: %v", err)
+		return nil, false
+	}
+	var best *time.Time
+	var bestRaw string
+	for _, obj := range res.Objects {
+		raw := obj.UpdatedAt
+		if raw == "" {
+			raw = obj.CreatedAt
+		}
+		if raw == "" {
+			continue
+		}
+		t, err := time.Parse(time.RFC3339, raw)
+		if err != nil {
+			continue
+		}
+		if best == nil || t.After(*best) {
+			best = &t
+			bestRaw = raw
+		}
+	}
+	if best == nil {
+		return nil, true
+	}
+	return &bestRaw, true
 }
 
 func (a adapter) exec(timeout time.Duration, args ...string) ([]byte, error) {

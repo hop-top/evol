@@ -19,31 +19,35 @@ evol run --config evol.yaml --select drift
 | `worst` | lowest last best score | corpus history |
 | `stale` | fewest recorded generations | corpus history (generation count is the staleness proxy — the corpus stores no wall-clock) |
 | `drift` | most negative recent score trend | per-generation best scores: `mean(last min(3, n-1)) - mean(prior)`; artifacts with fewer than two generations carry no trend and rank last; falls back to `never-run` when nothing has a trend |
-| `kb-churn` | most attention-starved | never-evolved first, then fewest generations |
+| `kb-churn` | knowledge moved since last evolution | KB `newest(ref)` vs the last generation's `recorded_at`; most-recent knowledge first, then the degrade ladder below |
 
 Ties always break by ref, so a given corpus state selects the same
 target every time.
 
-## The kb-churn caveat, honestly
+## kb-churn v1: the real signal, with a degrade ladder
 
-The intended signal is "knowledge newer than the artifact's last
-evolution" — a knowledge-base edit should re-queue the artifacts it
-informs. The KnowledgeBase port carries no timestamps today, so that
-cannot be measured without faking it. v0 therefore uses an
-attention-starvation proxy (never-evolved, then fewest generations).
+The signal is "knowledge newer than the artifact's last evolution" — a
+knowledge-base edit re-queues the artifacts it informs. Two additions
+made it measurable without faking anything: the KnowledgeBase optional
+`newest {query} → {ts}` action (spec/port-knowledgebase.md) and corpus
+record rows carrying `recorded_at` (spec/port-corpus.md; the engine
+stamps them, nothing fingerprints them, and tests inject a fixed clock).
 
-Proposed port addition (not yet in spec/):
+Selection walks a ladder — each rung only when the one above has no
+answer:
 
-```
-action "newest" {query} → {ts}   # RFC3339 of the newest passage
-                                 # matching the query; {unavailable:true}
-                                 # degrades like every KB action
-```
+| Rung | Picks | When it applies |
+|---|---|---|
+| 1 | artifacts with `kb.newest(ref) > last generation recorded_at`, most-recent knowledge first | KB serves `newest` AND the artifact has stamped history |
+| 2 | clean never-evolved artifacts | no measurable churn anywhere |
+| 3 | history-degraded artifacts (corpus could not answer) | no clean never-run rows |
+| 4 | fewest recorded generations (the v0 attention proxy) | everything has history, nothing shows churn |
 
-With that action, `kb-churn` becomes: select artifacts whose
-`kb.newest(ref) >` timestamp of their last recorded generation — which
-also requires the corpus to start recording generation timestamps
-(deliberately omitted so far for replay determinism; revisit together).
+Every failure mode degrades one rung — KB unconfigured, `newest`
+unsupported (older adapters), null `ts` (knowledge exists but nothing is
+timestamped), unstamped history rows — and ties always break by ref.
+`evol targets --format json` exposes the raw pair per row as
+`kb_newest` and `last_evolved`; the table shows LAST-EVOLVED.
 
 ## Interaction with budgets
 
