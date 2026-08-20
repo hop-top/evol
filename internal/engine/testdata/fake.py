@@ -83,6 +83,16 @@ if port == "corpus":
                  "source": "correction"},
             ]})
         reply({"cases": []})
+    if action == "add-cases":
+        with open(os.path.join(out_dir, "added.jsonl"), "a", encoding="utf-8") as f:
+            f.write(json.dumps(req) + "\n")
+        dup = 1 if os.environ.get("EVOL_FAKE_DUP") == "1" else 0
+        n = len(req.get("cases", [])) - dup
+        reply({"added": n, "duplicates": dup,
+               "ids": [c.get("id", "") for c in req.get("cases", [])[:n]]})
+    if action == "promote-cases":
+        reply({"promoted": len(req.get("ids", [])) - 1,
+               "missing": [req.get("ids", [""])[-1]]})
     if action == "record":
         with open(os.path.join(out_dir, "record.jsonl"), "a", encoding="utf-8") as f:
             f.write(json.dumps(req) + "\n")
@@ -100,6 +110,17 @@ if port == "corpus":
                 {"generation": 2, "best_score": 0.55, "verdict": "rejected"},
             ]})
         reply({"generations": []})
+
+if port == "generator" and action == "synth":
+    mode = os.environ.get("EVOL_FAKE_SYNTH", "ok")
+    if mode == "dry":
+        reply({"cases": []})
+    reply({"cases": [
+        {"input": "synthesized input one", "expected": "expected one",
+         "rationale": "exercises rule one"},
+        {"input": "synthesized input two", "expected": "expected two",
+         "rationale": "exercises rule two"},
+    ]})
 
 if port == "generator":
     good = os.environ.get("EVOL_FAKE_GOOD") == "1"

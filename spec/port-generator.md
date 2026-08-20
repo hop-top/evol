@@ -61,6 +61,45 @@ Response:
  ]}
 ```
 
+### `synth` (optional)
+
+Generate NEW eval cases grounded in knowledge — distinct from `propose`
+(which mutates the artifact). Optional: adapters without it answer with
+an adapter error and callers report that cleanly. Cases produced this
+way MUST be treated as unreviewed by callers — the engine quarantines
+them via the [Corpus](port-corpus.md) `add-cases` action.
+
+Request:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `artifact` | object | the artifact the cases will evaluate (same shape as `propose`) |
+| `knowledge` | object[] | grounding passages `{text, source}` — synthesis without grounding invents circular evals from the artifact text; callers SHOULD refuse to synthesize with an empty list |
+| `examples` | object[] | existing cases `{input, expected}` as style references |
+| `count` | int | cases requested (adapters may return fewer) |
+
+Response:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `cases` | object[] | `{input, expected?, rationale?}` — no ids, splits, or provenance; the caller assigns those |
+
+```json
+{"evol": "1", "port": "generator", "action": "synth",
+ "artifact": {"ref": "skills/commit-style", "kind": "skill", "body": "..."},
+ "knowledge": [{"text": "Dependency bumps use the build type.", "source": "notes/style"}],
+ "examples": [{"input": "Commit message for a fix touching two packages",
+               "expected": "type(scope) prefix; imperative subject"}],
+ "count": 3}
+```
+
+```json
+{"evol": "1", "port": "generator", "action": "synth",
+ "cases": [{"input": "Commit message for bumping a lockfile-only dependency",
+            "expected": "build: prefix; body optional",
+            "rationale": "exercises the dependency-bump type rule"}]}
+```
+
 ## Notes
 
 - Candidates are complete artifacts, not diffs. The engine never merges.

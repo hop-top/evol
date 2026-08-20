@@ -500,3 +500,118 @@ func TestSignificanceSmallSampleFallsBackToMean(t *testing.T) {
 		t.Errorf("log = %q, want a significance-disabled warning", log.String())
 	}
 }
+
+// TestRecordCarriesStrategyAndScoreValues pins the corpus record
+// payload: candidate rows must carry the generator strategy (tabu keeps
+// its strategy dimension) and per-case score values with case ids.
+// Regression: strategy was silently dropped before the field existed on
+// CandidateOutcome; score values were once suspected missing (they never
+// were — this test keeps it that way).
+func TestRecordCarriesStrategyAndScoreValues(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("EVOL_TEST_DIR", dir)
+	t.Setenv("EVOL_FAKE_GOOD", "1")
+
+	if _, err := New(fakeConfig(t, false)).Run(context.Background(), "skills/fake"); err != nil {
+		t.Fatal(err)
+	}
+
+	var checked bool
+	for _, rec := range readRecords(t, dir) {
+		cands, _ := rec["candidates"].([]any)
+		for _, c := range cands {
+			m, _ := c.(map[string]any)
+			if m["verdict"] != VerdictAccepted {
+				continue
+			}
+			checked = true
+			if got, _ := m["strategy"].(string); got != "tighten" {
+				t.Errorf("accepted row strategy = %q, want %q", got, "tighten")
+			}
+			scores, _ := m["scores"].([]any)
+			if len(scores) == 0 {
+				t.Fatal("accepted row carries no scores")
+			}
+			s0, _ := scores[0].(map[string]any)
+			if id, _ := s0["case_id"].(string); id == "" {
+				t.Errorf("score entry missing case_id: %v", s0)
+			}
+			if v, ok := s0["score"].(float64); !ok || v <= 0 {
+				t.Errorf("score entry value not persisted: %v", s0)
+			}
+		}
+	}
+	if !checked {
+		t.Fatal("no accepted candidate row found in corpus records")
+	}
+}
+
+func synthConfig(t *testing.T, withKB bool) Config {
+	cfg := fakeConfig(t, withKB)
+	cfg.Ports.CaseGen.Cmd = cfg.Ports.Corpus.Cmd // same fake adapter
+	return cfg
+}
+
+func TestSynthesizeQuarantinesGroundedCases(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("EVOL_TEST_DIR", dir)
+	t.Setenv("EVOL_FAKE_DUP", "1")
+
+	res, err := New(synthConfig(t, true)).SynthesizeCases(context.Background(), "skills/fake", 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Generated != 2 || res.Added != 1 || res.Duplicates != 1 || !res.Quarantined {
+		t.Fatalf("result = %+v, want generated 2 / added 1 / dup 1 / quarantined", res)
+	}
+	if len(res.Cases) != 2 || !strings.HasPrefix(res.Cases[0].ID, "syn-") {
+		t.Fatalf("case previews = %+v", res.Cases)
+	}
+
+	// The add-cases payload must mark every case quarantined + synthetic.
+	data, err := os.ReadFile(filepath.Join(dir, "added.jsonl")) // #nosec G304 -- test temp dir
+	if err != nil {
+		t.Fatal(err)
+	}
+	var added map[string]any
+	if err := json.Unmarshal(bytes.TrimSpace(data), &added); err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range added["cases"].([]any) {
+		m := c.(map[string]any)
+		if m["quarantined"] != true || m["source"] != "synthetic" {
+			t.Fatalf("intake case not quarantined synthetic: %v", m)
+		}
+	}
+}
+
+func TestSynthesizeRefusesWithoutKnowledge(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("EVOL_TEST_DIR", dir)
+	t.Setenv("EVOL_FAKE_KB", "unavailable")
+
+	_, err := New(synthConfig(t, true)).SynthesizeCases(context.Background(), "skills/fake", 2)
+	if !errors.Is(err, ErrNoKnowledge) {
+		t.Fatalf("err = %v, want ErrNoKnowledge", err)
+	}
+}
+
+func TestSynthesizeWithoutCaseGenPortIsConfigError(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("EVOL_TEST_DIR", dir)
+	_, err := New(fakeConfig(t, true)).SynthesizeCases(context.Background(), "skills/fake", 2)
+	if !errors.Is(err, ErrNoCaseGen) {
+		t.Fatalf("err = %v, want ErrNoCaseGen", err)
+	}
+}
+
+func TestSynthesizeDryAdapterIsNotError(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("EVOL_TEST_DIR", dir)
+	t.Setenv("EVOL_FAKE_SYNTH", "dry")
+
+	res, err := New(synthConfig(t, true)).SynthesizeCases(context.Background(), "skills/fake", 2)
+	if err != nil || res.Generated != 0 || res.Added != 0 {
+		t.Fatalf("res=%+v err=%v, want clean dry result", res, err)
+	}
+}
