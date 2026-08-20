@@ -17,15 +17,15 @@ ports:
     cmd: [evol-adapter-generator-llm]
     timeout_seconds: 300
   executor:
-    cmd: [evol-adapter-executor]
+    cmd: [evol-adapter-executor-apx]
     timeout_seconds: 600
   corpus:
-    cmd: [evol-adapter-corpus]
+    cmd: [evol-adapter-corpus-fs]
     timeout_seconds: 30
   # Engine-level draft contract until a Scorer port is extracted —
   # see docs/scorer-draft.md.
   scorer:
-    cmd: [evol-adapter-scorer]
+    cmd: [evol-adapter-scorer-eva]
     timeout_seconds: 120
   # Optional: leave cmd out (or empty) to run without a knowledge base.
   # casegen (optional): the generator-port `synth` action for grounded
@@ -36,7 +36,7 @@ ports:
   #   timeout_seconds: 300
 
   knowledgebase:
-    cmd: [evol-adapter-kb]
+    cmd: [evol-adapter-kb-ctxt]
     timeout_seconds: 30
 
 # Optional: the run ledger (spec/port-audit.md). One entry per loop
@@ -45,7 +45,7 @@ ports:
 # in the family tracker (project-scoped, next to task and flow
 # history); audit-fs is the zero-dependency JSONL fallback.
 #  audit:
-#    cmd: ["audit-tlc"]        # or ["audit-fs"] with EVOL_AUDIT_ROOT
+#    cmd: ["evol-adapter-audit-tlc"]        # or ["evol-adapter-audit-fs"] with EVOL_AUDIT_ROOT
 #    timeout_seconds: 30
 
 thresholds:

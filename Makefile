@@ -1,8 +1,18 @@
-.PHONY: build test lint links check clean setup release \
+.PHONY: build test lint links check clean setup release quickstart \
        promote promote-alpha promote-beta promote-rc \
        promote-release
 
 check: lint test links
+
+# Build the engine + the adapters the worked example wires, then verify
+# wiring with a keyless dry-run. Safe on a fresh clone; no LLM calls.
+quickstart:
+	mkdir -p e2e/bin
+	GOFLAGS=-buildvcs=false go build -o e2e/bin/evol .
+	for a in artifact-fs generator-llm executor-apx corpus-fs kb-ctxt; do \
+		GOFLAGS=-buildvcs=false go build -o e2e/bin/$$a ./adapters/$$a; \
+	done
+	e2e/bin/evol run --config e2e/evol.yaml --dry-run --format json
 
 build:
 	mkdir -p bin
