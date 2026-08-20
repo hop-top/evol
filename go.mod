@@ -6,6 +6,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	hop.top/kit v0.5.0-alpha.1
+	hop.top/xrr v0.1.0-alpha.4
 )
 
 require (

@@ -91,6 +91,30 @@ layer (per-candidate profiles) are configured per
 `fixtures_dir` in `e2e/evol.yaml` then records the cassette path with
 every promoted candidate.
 
+## Recording runs (cassettes)
+
+Wrap any runner shim with `runner-xrr` to cassette-record every
+(candidate content, case input, provider) triple, so future runs —
+regression re-runs, or re-evaluating the same candidates after a
+target-selection or scorer change — replay from disk instead of
+re-spending agent calls:
+
+```sh
+go build -buildvcs=false -o e2e/bin/runner-xrr ./adapters/runner-xrr
+export EVOL_EXEC_CMD='["e2e/bin/runner-xrr","e2e/bin/runners/claude.sh"]'
+export XRR_MODE=record          # cache-as-you-go during evolution runs
+export XRR_CASSETTE_DIR=e2e/cassettes
+```
+
+- `record` during evolution runs: live calls happen once, each pair is
+  persisted. New candidates always execute live (their content is new).
+- `replay` for regression re-runs of recorded artifacts: no agent
+  spawns; a miss exits 21 (recorded pairs only).
+- Cassette identity is candidate CONTENT + case input + provider —
+  temp staging paths never leak into keys (`adapters/runner-xrr/README.md`).
+- Committed cassettes under `e2e/cassettes/` double as the regression
+  fixtures that `fixtures_dir` records with promoted candidates.
+
 ## Runner selection
 
 The agent under test runs behind the **reference runner contract**

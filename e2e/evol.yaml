@@ -36,6 +36,9 @@ holdout: holdout
 executor_mode: live
 # fixtures_dir: e2e/cassettes   # enable with the +xrr layer
 
+# Cassette recording: wrap any shim with runner-xrr to cache agent calls
+# (EVOL_EXEC_CMD='["e2e/bin/runner-xrr","e2e/bin/runners/claude.sh"]' +
+#  XRR_MODE=record XRR_CASSETTE_DIR=e2e/cassettes — RUNBOOK "Recording runs").
 # Model under test — forwarded to the runner shim as EVOL_PROVIDER
 # (reference runner contract, spec/port-executor.md). Default shim is
 # e2e/bin/runners/claude.sh; swap shims via EVOL_EXEC_CMD and pick the
