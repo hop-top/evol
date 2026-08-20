@@ -356,10 +356,10 @@ func TestDeprecatedModelEnvMapsToAnthropic(t *testing.T) {
 
 func TestSanitizeURI(t *testing.T) {
 	cases := map[string]string{
-		"anthropic://m":                          "anthropic://m",
-		"anthropic://m?api_key=s":                "anthropic://m",
+		"anthropic://m":                             "anthropic://m",
+		"anthropic://m?api_key=s":                   "anthropic://m",
 		"anthropic://m?api_key=s&base_url=http://x": "anthropic://m?base_url=http://x",
-		"ollama://h:1/m?base_url=http://x":       "ollama://h:1/m?base_url=http://x",
+		"ollama://h:1/m?base_url=http://x":          "ollama://h:1/m?base_url=http://x",
 	}
 	for in, want := range cases {
 		if got := sanitizeURI(in); got != want {
