@@ -71,6 +71,7 @@ Response:
 | Field | Type | Notes |
 |-------|------|-------|
 | `version` | string | version id of the written artifact |
+| `git_commit` | string? | commit SHA when the adapter runs git-native versioning; omitted otherwise |
 
 ```json
 {"evol": "1", "port": "artifactstore", "action": "write",
@@ -107,11 +108,61 @@ Response:
  "refs": ["skills/commit-style", "skills/review-checklist"]}
 ```
 
+### `versions` (optional)
+
+List an artifact's version history, newest first. Adapters without
+version history MAY return an adapter error (non-zero exit) with a
+diagnostic naming what would enable it; callers degrade with that
+guidance. Additive-optional action per the
+[versioning rules](README.md).
+
+Request:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `ref` | string | target ref |
+
+Response:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `versions` | object[] | newest first |
+| `versions[].version` | string | version id (e.g. content hash) |
+| `versions[].git_commit` | string? | producing commit, git-native adapters |
+
+### `restore` (optional)
+
+Restore the artifact to a prior version. Restoration is itself a new
+version — never a history rewrite. Same optionality rules as
+`versions`.
+
+Request:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `ref` | string | target ref |
+| `version` | string | version id or (git-native) commit-SHA prefix |
+
+Response:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `version` | string | version id of the restored content |
+| `git_commit` | string? | rollback commit, git-native adapters |
+
 ## Notes
 
 - `load` after `write` must return the newly written version.
 - Adapters should treat `ref` as opaque beyond their own namespace
   rules; the engine never parses refs.
+- **Git-native mode (reference filesystem adapter):** with
+  `EVOL_ARTIFACT_GIT=1` and the artifact root inside a git work tree,
+  every `write` also stages and commits the ref (refusing when
+  unrelated staged changes are present), `git_commit` is returned
+  alongside the content-hash version, and `versions`/`restore` serve
+  the ref's git history. Rollbacks are forward commits. Without the
+  env or a work tree, behavior is unchanged and the history actions
+  error cleanly.
 
 See also: [Generator](port-generator.md) consumes loaded artifacts;
 [Corpus](port-corpus.md) keys cases and tabu entries by `artifact_ref`.

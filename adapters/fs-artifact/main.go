@@ -38,6 +38,9 @@ type request struct {
 	Body        string `json:"body"`
 	Message     string `json:"message"`
 
+	// restore
+	Version string `json:"version"`
+
 	// list
 	Kind string `json:"kind"`
 }
@@ -58,6 +61,10 @@ type response struct {
 	Artifact *artifact `json:"artifact,omitempty"`
 	Version  string    `json:"version,omitempty"`
 	Refs     []string  `json:"refs,omitempty"`
+
+	// git-native mode only
+	GitCommit string         `json:"git_commit,omitempty"`
+	Versions  []versionEntry `json:"versions,omitempty"`
 }
 
 func main() {
@@ -107,11 +114,55 @@ func run(stdin io.Reader, stdout, stderr io.Writer, getenv func(string) string) 
 		if req.Message != "" {
 			_, _ = fmt.Fprintf(stderr, "fs-artifact: write %q: %s\n", req.Ref, req.Message)
 		}
+		gitMode := gitVersioning(root, getenv)
+		if gitMode {
+			// Refuse before touching the tree: committing on top of
+			// unrelated staged work would swallow it.
+			if err := refuseUnrelatedStaged(root); err != nil {
+				return fail("write %q (git): %v", req.Ref, err)
+			}
+		}
 		version, err := write(root, req.Ref, req.Frontmatter, req.Body)
 		if err != nil {
 			return fail("write %q: %v", req.Ref, err)
 		}
 		resp.Version = version
+		if gitMode {
+			msg := fmt.Sprintf("evol: promote %s %s", req.Ref, version)
+			sha, err := gitCommitRef(root, req.Ref, msg)
+			if err != nil {
+				return fail("write %q (git): %v", req.Ref, err)
+			}
+			resp.GitCommit = sha
+		}
+	case "versions":
+		if _, err := resolve(root, req.Ref); err != nil {
+			return fail("versions %q: %v", req.Ref, err)
+		}
+		if !gitVersioning(root, getenv) {
+			return fail("versions %q: requires git-native mode (EVOL_ARTIFACT_GIT=1 and an artifact root inside a git work tree)", req.Ref)
+		}
+		entries, err := gitVersions(root, req.Ref)
+		if err != nil {
+			return fail("versions %q: %v", req.Ref, err)
+		}
+		resp.Versions = entries
+	case "restore":
+		if _, err := resolve(root, req.Ref); err != nil {
+			return fail("restore %q: %v", req.Ref, err)
+		}
+		if !gitVersioning(root, getenv) {
+			return fail("restore %q: requires git-native mode (EVOL_ARTIFACT_GIT=1 and an artifact root inside a git work tree)", req.Ref)
+		}
+		if req.Version == "" {
+			return fail("restore %q: version is required", req.Ref)
+		}
+		version, sha, err := gitRestore(root, req.Ref, req.Version)
+		if err != nil {
+			return fail("restore %q: %v", req.Ref, err)
+		}
+		resp.Version = version
+		resp.GitCommit = sha
 	case "list":
 		refs, err := list(root, req.Kind)
 		if err != nil {
