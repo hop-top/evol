@@ -1,0 +1,17 @@
+xrr: "1"
+adapter: exec
+fingerprint: 1c10f8e9
+recorded_at: "2026-08-20T04:25:00Z"
+payload:
+    stdout: |
+        Looking at this change, here's the commit message:
+
+        ```
+        build(deps): upgrade viper to 1.21.0
+
+        Config loading now defaults to reading from env when file not found.
+        Uses VIPER_CONFIG_NAME for file discovery. Error handling changed:
+        non-existent files no longer trigger fatal errors by default.
+        ```
+    exit_code: 0
+    duration_ms: 19276

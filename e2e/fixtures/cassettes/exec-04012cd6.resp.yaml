@@ -1,0 +1,21 @@
+xrr: "1"
+adapter: exec
+fingerprint: 04012cd6
+recorded_at: "2026-08-20T04:32:18Z"
+payload:
+    stdout: |
+        Based on your description of extracting retry logic into a new `backoff` package, here's the commit message:
+
+        ```
+        refactor: extract retry logic into backoff package
+
+        Consolidates exponential backoff + retry coordination into a dedicated,
+        reusable package. Reduces duplication across call sites; improves
+        testability by isolating backoff strategy from client logic. Enables
+        future enhancements (jitter, max retry caps, metrics hooks) without
+        scattering changes across the codebase.
+        ```
+
+        The commit follows Conventional Commits spec with `refactor` type (since this is code reorganization), and the body explains the three key motivations: reducing duplication, improving testability, and enabling future work.
+    exit_code: 0
+    duration_ms: 17974

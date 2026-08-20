@@ -1,0 +1,17 @@
+xrr: "1"
+adapter: exec
+fingerprint: d7809073
+recorded_at: "2026-08-20T04:58:33Z"
+payload:
+    stdout: |
+        Based on your recent commits (which follow Conventional Commits), here's the commit message:
+
+        ```
+        build(deps): upgrade viper from 1.19.0 to 1.21.0
+
+        Config loading now uses EnvKeyReplacer for environment variable handling.
+        Improved nested key parsing with custom separators. Behavior changes in
+        binding resolution for conflicting key patterns.
+        ```
+    exit_code: 0
+    duration_ms: 10119

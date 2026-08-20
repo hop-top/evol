@@ -1,0 +1,23 @@
+xrr: "1"
+adapter: exec
+fingerprint: c5810a7f
+recorded_at: "2026-08-20T04:22:26Z"
+payload:
+    stdout: |
+        Based on your description of adding exponential backoff to retryTransport and wiring it into the HTTP client component, here's the commit message:
+
+        ```
+        feat(http): add exponential backoff to retry transport
+
+        Wire exponential backoff logic into retryTransport to improve resilience on transient failures.
+        ```
+
+        This follows Conventional Commits format:
+        - **Type**: `feat` (new feature)
+        - **Scope**: `http` (http client component)
+        - **Subject**: concise, imperative, under 72 characters
+        - **Body**: brief explanation of the "why" — improving resilience on transient failures
+
+        Would you like me to adjust the scope or description?
+    exit_code: 0
+    duration_ms: 15103

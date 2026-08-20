@@ -1,0 +1,15 @@
+xrr: "1"
+adapter: exec
+fingerprint: bd4dae2d
+recorded_at: "2026-08-20T05:42:29Z"
+payload:
+    stdout: |
+        Using commit-messages skill to write the commit message.
+
+        feat(deps): upgrade viper to 1.21.0
+
+        Config loading now uses a separate Viper instance per file to avoid state
+        leakage between concurrent reads. Replaces previous shared-instance pattern
+        that could cause race conditions under high concurrency.
+    exit_code: 0
+    duration_ms: 6587

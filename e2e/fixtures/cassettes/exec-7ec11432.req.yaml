@@ -1,7 +1,7 @@
 xrr: "1"
 adapter: exec
 fingerprint: 7ec11432
-recorded_at: "2026-08-20T03:43:13Z"
+recorded_at: "2026-08-20T06:15:08Z"
 payload:
     argv:
         - claude.sh

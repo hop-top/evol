@@ -1,0 +1,13 @@
+xrr: "1"
+adapter: exec
+fingerprint: 2c3128b1
+recorded_at: "2026-08-20T06:27:07Z"
+payload:
+    stdout: |
+        fix(http): add exponential backoff to `retryTransport`
+
+        - implement backoff strategy with configurable base delay + max retries
+        - wire into http client component for automatic retry on transient failures
+        - preserve existing retry behavior; backoff applies on subsequent attempts
+    exit_code: 0
+    duration_ms: 6388

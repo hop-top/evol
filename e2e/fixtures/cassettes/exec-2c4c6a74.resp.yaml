@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: 2c4c6a74
+recorded_at: "2026-08-20T05:25:57Z"
+payload:
+    stdout: |
+        feat(deps): upgrade viper to 1.21.0
+
+        Config loading now uses structured binding with `viper.Unmarshal()` for type-safe deserialization. Environment variable precedence simplified via `viper.AutomaticEnv()`. File watch behavior refined — reload triggers only on content changes, not metadata updates.
+    exit_code: 0
+    duration_ms: 11736

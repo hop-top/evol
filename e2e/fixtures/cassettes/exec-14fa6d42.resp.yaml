@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: 14fa6d42
+recorded_at: "2026-08-20T04:03:19Z"
+payload:
+    stdout: |
+        fix(deps): upgrade viper to 1.21.0
+
+        Config loading behavior refined: better error messages for missing files, improved type coercion for nested keys, stricter validation of env var bindings. No breaking changes to public API.
+    exit_code: 0
+    duration_ms: 11864

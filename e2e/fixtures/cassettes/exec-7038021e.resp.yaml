@@ -1,0 +1,18 @@
+xrr: "1"
+adapter: exec
+fingerprint: 7038021e
+recorded_at: "2026-08-20T05:21:40Z"
+payload:
+    stdout: |
+        Based on the Conventional Commits specification and your change (corrected typos and refreshed examples in README):
+
+        ```
+        docs(readme): correct typos and refresh examples
+        ```
+
+        This follows the format: `type(scope): description`, where:
+        - **type**: `docs` (documentation-only changes)
+        - **scope**: `readme` (the affected file)
+        - **description**: brief, imperative description of what changed
+    exit_code: 0
+    duration_ms: 9926

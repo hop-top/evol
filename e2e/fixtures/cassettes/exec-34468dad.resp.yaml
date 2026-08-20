@@ -1,0 +1,19 @@
+xrr: "1"
+adapter: exec
+fingerprint: 34468dad
+recorded_at: "2026-08-20T05:44:50Z"
+payload:
+    stdout: |
+        Looking at the recent commits and the change description, I'll write a conventional commit message for this CI workflow update.
+
+        ```
+        ci: pin Go version and enable race detector
+        ```
+
+        This follows the Conventional Commits spec with:
+        - **type**: `ci` (continuous integration changes)
+        - **subject**: describes what changed (pinning Go version + enabling race detector)
+        - Clear, imperative voice ("pin" and "enable" as instructions)
+        - Concise and fits within 72 characters
+    exit_code: 0
+    duration_ms: 6767

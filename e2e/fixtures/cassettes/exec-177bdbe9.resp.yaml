@@ -1,0 +1,27 @@
+xrr: "1"
+adapter: exec
+fingerprint: 177bdbe9
+recorded_at: "2026-08-20T04:00:03Z"
+payload:
+    stdout: |
+        Based on your description that you've removed the deprecated `LegacyAuth` interface as a breaking change, here's the commit message following Conventional Commits:
+
+        ```
+        fix!: remove deprecated LegacyAuth interface
+
+        Use NewAuth instead. This is a breaking change for any code still relying
+        on LegacyAuth — migrate to the NewAuth interface which provides better
+        type safety and improved performance.
+        ```
+
+        Or if you prefer a more concise approach:
+
+        ```
+        fix!: remove LegacyAuth interface
+
+        Migrate to NewAuth. Breaking change for consumers using LegacyAuth.
+        ```
+
+        The `!` after `fix` signals a breaking change per the Conventional Commits specification, and the body notes the replacement path for users migrating away from the deprecated interface.
+    exit_code: 0
+    duration_ms: 51019

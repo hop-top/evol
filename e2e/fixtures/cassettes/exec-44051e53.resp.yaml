@@ -1,0 +1,13 @@
+xrr: "1"
+adapter: exec
+fingerprint: "44051e53"
+recorded_at: "2026-08-20T06:26:48Z"
+payload:
+    stdout: |
+        feat(gateway): add rate limiting to public endpoints
+
+        - prevent abuse of unauthenticated routes
+        - configure per-client limits via environment variables
+        - add metrics for rate limit rejections
+    exit_code: 0
+    duration_ms: 6181

@@ -1,0 +1,18 @@
+xrr: "1"
+adapter: exec
+fingerprint: cbee4f08
+recorded_at: "2026-08-20T05:50:37Z"
+payload:
+    stdout: |
+        Based on the Conventional Commits format and the change description, here's the commit message:
+
+        ```
+        docs: correct typos and refresh README examples
+        ```
+
+        This follows the format: `<type>(<scope>): <subject>` where:
+        - `docs` — type (documentation-only change)
+        - `README` is implied by the scope context (but can be omitted for brevity per style)
+        - Subject uses imperative mood and is under 72 characters
+    exit_code: 0
+    duration_ms: 10250

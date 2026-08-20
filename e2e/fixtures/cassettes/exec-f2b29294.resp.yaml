@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: f2b29294
+recorded_at: "2026-08-20T06:12:50Z"
+payload:
+    stdout: |
+        fix(storage): rename module to store
+
+        BREAKING CHANGE: storage module is now exported as store. Update import paths from `storage` to `store` throughout your codebase.
+    exit_code: 0
+    duration_ms: 8588

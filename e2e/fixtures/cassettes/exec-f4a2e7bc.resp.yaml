@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: f4a2e7bc
+recorded_at: "2026-08-20T04:57:59Z"
+payload:
+    stdout: |
+        fix(ci): pin Go version and enable race detector
+
+        Pinned Go version in CI workflow for reproducibility. Enabled race detector in test job to catch concurrent access issues earlier in the development cycle.
+    exit_code: 0
+    duration_ms: 6810

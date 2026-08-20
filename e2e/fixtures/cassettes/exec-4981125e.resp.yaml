@@ -1,0 +1,24 @@
+xrr: "1"
+adapter: exec
+fingerprint: 4981125e
+recorded_at: "2026-08-20T04:55:15Z"
+payload:
+    stdout: |
+        Let me write the commit message based on your request:
+
+        ```
+        refactor: extract retry logic into backoff package
+
+        Consolidate exponential backoff and retry logic into a dedicated,
+        reusable package. Reduces duplication across services and simplifies
+        testing retry behavior in isolation. Single source of truth for
+        backoff strategy enables consistent retry semantics across the
+        codebase.
+        ```
+
+        This follows Conventional Commits with:
+        - **Type**: `refactor` — code reorganization, not a new feature
+        - **Subject**: concise, describes what changed (extracted to new package)
+        - **Body**: three noun phrases explaining why — reduces duplication, simplifies testing, enables consistency
+    exit_code: 0
+    duration_ms: 30259

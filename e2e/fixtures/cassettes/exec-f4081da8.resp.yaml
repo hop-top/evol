@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: f4081da8
+recorded_at: "2026-08-20T04:27:04Z"
+payload:
+    stdout: |
+        fix(gateway): add rate limiting to public endpoints
+
+        Prevents abuse and ensures fair resource allocation across clients by implementing token bucket rate limiting on all publicly exposed gateway endpoints.
+    exit_code: 0
+    duration_ms: 11393

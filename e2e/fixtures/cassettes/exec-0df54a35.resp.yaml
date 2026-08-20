@@ -1,0 +1,12 @@
+xrr: "1"
+adapter: exec
+fingerprint: 0df54a35
+recorded_at: "2026-08-20T05:57:25Z"
+payload:
+    stdout: |
+        fix(ci): pin Go version and enable race detector
+
+        Prevents flaky builds from Go version drift; race detector catches
+        concurrent access bugs at test time.
+    exit_code: 0
+    duration_ms: 5742

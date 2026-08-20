@@ -1,0 +1,17 @@
+xrr: "1"
+adapter: exec
+fingerprint: 2d6bef39
+recorded_at: "2026-08-20T05:51:05Z"
+payload:
+    stdout: |
+        Based on the commit message guidelines in the skill specification, here's the commit message:
+
+        ```
+        ci: pin Go version and enable race detector
+        ```
+
+        This follows the Conventional Commits format with:
+        - **type**: `ci` (for continuous integration changes)
+        - **subject**: concise, imperative mood, under 72 characters, describing both changes in the workflow
+    exit_code: 0
+    duration_ms: 10705

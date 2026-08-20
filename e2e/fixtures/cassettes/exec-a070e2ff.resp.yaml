@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: a070e2ff
+recorded_at: "2026-08-20T06:04:28Z"
+payload:
+    stdout: |
+        feat(config): upgrade viper to 1.21.0
+
+        Support new config loading API and improved file watching. Viper 1.21.0 introduces enhanced configuration source management with better precedence handling and more granular control over watched file operations.
+    exit_code: 0
+    duration_ms: 6195

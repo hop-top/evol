@@ -1,0 +1,13 @@
+xrr: "1"
+adapter: exec
+fingerprint: "35875145"
+recorded_at: "2026-08-20T06:28:39Z"
+payload:
+    stdout: |
+        feat(deps): upgrade viper to 1.21.0
+
+        - config loader now supports JSON5 and YAML 1.2
+        - improved error messages for missing keys
+        - backwards compatible with existing configs
+    exit_code: 0
+    duration_ms: 6717

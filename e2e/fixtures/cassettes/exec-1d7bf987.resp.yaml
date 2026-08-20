@@ -1,0 +1,9 @@
+xrr: "1"
+adapter: exec
+fingerprint: 1d7bf987
+recorded_at: "2026-08-20T04:24:16Z"
+payload:
+    stdout: |
+        feat(ci): pin Go version and enable race detector
+    exit_code: 0
+    duration_ms: 11295

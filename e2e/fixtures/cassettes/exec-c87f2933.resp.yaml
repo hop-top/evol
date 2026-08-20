@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: c87f2933
+recorded_at: "2026-08-20T05:41:51Z"
+payload:
+    stdout: |
+        I'll write a commit message for this change following the Conventional Commits specification.
+
+        docs: fix typos and refresh examples in README
+    exit_code: 0
+    duration_ms: 5471

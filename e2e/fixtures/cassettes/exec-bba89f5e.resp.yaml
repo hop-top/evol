@@ -1,0 +1,14 @@
+xrr: "1"
+adapter: exec
+fingerprint: bba89f5e
+recorded_at: "2026-08-20T06:21:36Z"
+payload:
+    stdout: |
+        Let me write the commit message following Conventional Commits format:
+
+        ci: pin Go version and enable race detector
+
+        - Ensures reproducible CI builds across environments
+        - Catches concurrency issues in tests via race detector
+    exit_code: 0
+    duration_ms: 8209

@@ -1,0 +1,10 @@
+xrr: "1"
+adapter: exec
+fingerprint: 57a5935f
+recorded_at: "2026-08-20T05:52:39Z"
+payload:
+    argv:
+        - claude.sh
+        - candidate:c486374f1122
+        - provider:claude://haiku
+    stdin: extracted the retry logic into a new package named backoff; explain the motivation in the body

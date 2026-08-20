@@ -1,0 +1,18 @@
+xrr: "1"
+adapter: exec
+fingerprint: 9173c01a
+recorded_at: "2026-08-20T06:25:45Z"
+payload:
+    stdout: |
+        Based on the Conventional Commits specification and your guidelines, here's the commit message for renaming the storage module to store:
+
+        ```
+        refactor!: rename `storage` module to `store`
+
+        - update all import paths across codebase
+        - breaking change affects public API
+        ```
+
+        The `!` before the colon indicates a breaking change per the Conventional Commits spec. The message is concise in telegraphese style (noun phrases, no articles), and the body uses brief note-like fragments explaining the scope of the change.
+    exit_code: 0
+    duration_ms: 8214

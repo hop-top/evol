@@ -1,0 +1,20 @@
+xrr: "1"
+adapter: exec
+fingerprint: 884e2dfd
+recorded_at: "2026-08-20T04:23:06Z"
+payload:
+    stdout: |
+        Based on the change description you provided, here's the commit message:
+
+        ```
+        refactor!: remove deprecated LegacyAuth interface
+
+        Use ModernAuth instead for all authentication flows.
+        ```
+
+        This follows Conventional Commits format with:
+        - `refactor!` — indicates a breaking change (the `!` signals BREAKING CHANGE per the spec)
+        - Clear subject describing what was removed
+        - Body note on the replacement strategy
+    exit_code: 0
+    duration_ms: 16993

@@ -1,0 +1,18 @@
+xrr: "1"
+adapter: exec
+fingerprint: 33831fce
+recorded_at: "2026-08-20T04:41:45Z"
+payload:
+    stdout: |
+        Based on your description, here's the commit message:
+
+        ```
+        refactor: extract retry logic into backoff package
+
+        Consolidates retry logic into a dedicated backoff package for better
+        reusability and separation of concerns. Retry behavior is now decoupled
+        from call sites, reducing duplication and simplifying integration across
+        different components.
+        ```
+    exit_code: 0
+    duration_ms: 44291

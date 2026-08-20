@@ -1,0 +1,19 @@
+xrr: "1"
+adapter: exec
+fingerprint: 024eb8ea
+recorded_at: "2026-08-20T06:27:32Z"
+payload:
+    stdout: |
+        Based on the change description you provided, here's the commit message:
+
+        ```
+        refactor!: remove deprecated `LegacyAuth` interface
+
+        - migrate to `ModernAuth` for all use cases
+        - update existing integrations to use the new auth system
+        - remove related legacy auth utilities and helpers
+        ```
+
+        This follows Conventional Commits with the breaking change indicator (`!`), clearly states what was removed, and notes in the body that `ModernAuth` is the replacement. Adjust the replacement interface name as needed to match your actual codebase.
+    exit_code: 0
+    duration_ms: 11769

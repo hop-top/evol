@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: d8daf463
+recorded_at: "2026-08-20T05:18:40Z"
+payload:
+    stdout: |
+        fix(gateway): add rate limiting to public endpoints
+
+        Rate limit unauthenticated traffic to prevent abuse and ensure service stability.
+    exit_code: 0
+    duration_ms: 24965

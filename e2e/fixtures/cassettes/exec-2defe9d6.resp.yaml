@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: 2defe9d6
+recorded_at: "2026-08-20T05:54:17Z"
+payload:
+    stdout: |
+        fix(ci): pin Go version and enable race detector in CI workflow
+
+        Pinning Go version ensures reproducible builds across CI runs. Enabling the race detector catches data races that would otherwise surface unpredictably in production.
+    exit_code: 0
+    duration_ms: 6647

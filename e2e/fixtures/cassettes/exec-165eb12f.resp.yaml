@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: 165eb12f
+recorded_at: "2026-08-20T06:13:52Z"
+payload:
+    stdout: |
+        feat(gateway): add rate limiting to public endpoints
+
+        Prevents abuse of public-facing API surface by restricting request frequency per client.
+    exit_code: 0
+    duration_ms: 6793

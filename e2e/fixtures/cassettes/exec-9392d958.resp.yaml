@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: 9392d958
+recorded_at: "2026-08-20T03:57:05Z"
+payload:
+    stdout: |
+        feat(deps): upgrade viper to 1.21.0
+
+        Viper 1.21.0 introduces improved config file loading with better error handling for missing files and enhanced support for environment variable binding. Key changes: stricter path resolution, clearer distinction between file-not-found vs parse errors, and more intuitive behavior when merging multiple config sources.
+    exit_code: 0
+    duration_ms: 7265

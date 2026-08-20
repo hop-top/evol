@@ -1,11 +1,11 @@
 xrr: "1"
 adapter: exec
 fingerprint: 242abbe4
-recorded_at: "2026-08-20T03:42:15Z"
+recorded_at: "2026-08-20T06:14:11Z"
 payload:
     stdout: |
-        feat(http): add exponential backoff to retry transport
+        fix(http): add exponential backoff to retryTransport
 
-        Wire exponential backoff strategy into the HTTP client component's retry transport. Retries now use exponential delays with jitter to reduce load spikes during transient failures.
+        Wire retry logic with exponential backoff into the http client component to reduce load during transient failures and improve reliability under adverse network conditions.
     exit_code: 0
-    duration_ms: 7146
+    duration_ms: 6810

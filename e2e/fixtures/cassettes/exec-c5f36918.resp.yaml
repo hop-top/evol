@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: c5f36918
+recorded_at: "2026-08-20T05:38:32Z"
+payload:
+    stdout: |
+        feat(transport): add exponential backoff to retryTransport
+
+        Implements exponential backoff strategy with configurable base delay and max retries, integrated into http client for resilient request handling under transient failures.
+    exit_code: 0
+    duration_ms: 5700

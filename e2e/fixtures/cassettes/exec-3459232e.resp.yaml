@@ -1,0 +1,18 @@
+xrr: "1"
+adapter: exec
+fingerprint: 3459232e
+recorded_at: "2026-08-20T05:39:58Z"
+payload:
+    stdout: |
+        Looking at the recent commits from the session context, I can see the project uses Conventional Commits with types like `feat`, `fix`, `refactor`, `build`, `ci`, `chore`, `docs`, `style`, `perf`, `test`. The scope is in lowercase, and the style is concise.
+
+        For a dependency upgrade, `chore` is the appropriate type. Here's the commit message:
+
+        chore(deps): upgrade viper 1.19.0 → 1.21.0
+
+        Viper 1.20+ changes config loading to use `os.DirFS` for file access,
+        improving security and portability. NewWithOptions now requires explicit
+        config file paths; defaults to environment variables only. Update calls to
+        NewWithOptions or NewViper to pass ConfigFile if loading from disk.
+    exit_code: 0
+    duration_ms: 11441

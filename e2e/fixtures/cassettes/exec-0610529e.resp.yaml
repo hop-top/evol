@@ -1,0 +1,13 @@
+xrr: "1"
+adapter: exec
+fingerprint: 0610529e
+recorded_at: "2026-08-20T06:06:18Z"
+payload:
+    stdout: |
+        fix(auth): remove deprecated LegacyAuth interface
+
+        Use the new Auth interface instead. See migration guide in docs/auth-migration.md for details on updating your implementation.
+
+        BREAKING CHANGE: LegacyAuth has been removed.
+    exit_code: 0
+    duration_ms: 7499

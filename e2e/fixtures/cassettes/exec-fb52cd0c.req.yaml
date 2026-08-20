@@ -1,0 +1,10 @@
+xrr: "1"
+adapter: exec
+fingerprint: fb52cd0c
+recorded_at: "2026-08-20T05:14:10Z"
+payload:
+    argv:
+        - claude.sh
+        - candidate:d52b03708acf
+        - provider:claude://haiku
+    stdin: corrected typos and refreshed the examples in the README only

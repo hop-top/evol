@@ -1,0 +1,15 @@
+xrr: "1"
+adapter: exec
+fingerprint: f21e1b26
+recorded_at: "2026-08-20T06:19:21Z"
+payload:
+    stdout: |
+        Based on the change description, here's the commit message following Conventional Commits spec:
+
+        ```
+        refactor!: rename `storage` module to `store`
+
+        Updates all import paths throughout codebase. Breaking change in module naming and import contracts.
+        ```
+    exit_code: 0
+    duration_ms: 7888

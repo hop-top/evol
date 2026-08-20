@@ -1,0 +1,21 @@
+xrr: "1"
+adapter: exec
+fingerprint: a77a310b
+recorded_at: "2026-08-20T05:26:57Z"
+payload:
+    stdout: |
+        Based on the context you've provided—extracting retry logic into a new backoff package—here's the commit message following Conventional Commits and your style:
+
+        ```
+        refactor(retry): extract backoff retry logic into dedicated package
+
+        Isolates exponential backoff + retry mechanism for reusability across services. Reduces duplication in request handlers and improves testability by consolidating retry policy configuration and state management in one place.
+        ```
+
+        The message follows your conventions:
+        - **Type**: `refactor` (reorganizing existing code)
+        - **Scope**: `retry` (the affected domain)
+        - **Subject**: concise, under 72 chars
+        - **Body**: telegraphese style (noun phrases, minimal articles), explains the "why" (reusability, reduced duplication, improved testability) rather than just describing what changed
+    exit_code: 0
+    duration_ms: 15137

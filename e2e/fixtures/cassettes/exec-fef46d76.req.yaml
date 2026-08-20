@@ -1,0 +1,10 @@
+xrr: "1"
+adapter: exec
+fingerprint: fef46d76
+recorded_at: "2026-08-20T05:40:57Z"
+payload:
+    argv:
+        - claude.sh
+        - candidate:846fde2824eb
+        - provider:claude://haiku
+    stdin: added rate limiting to the public endpoints of the gateway service component

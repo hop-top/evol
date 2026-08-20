@@ -1,0 +1,13 @@
+{
+  "artifact_ref": "commit-messages/SKILL.md",
+  "baseline_version": "7e0c639e",
+  "baseline_score": 0.7048666666666668,
+  "accepted": true,
+  "accepted_id": "cand-01",
+  "new_version": "1d61f60b",
+  "best_score": 0.8236166666666668,
+  "generations": 1,
+  "candidates_tried": 3,
+  "sig_p": 0.00019998000199980003
+}
+EVOL_EXIT=0

@@ -1,0 +1,16 @@
+xrr: "1"
+adapter: exec
+fingerprint: c2066ff2
+recorded_at: "2026-08-20T05:42:48Z"
+payload:
+    stdout: |
+        Looking at your change, I'll write a commit message following the Conventional Commits specification:
+
+        ```
+        refactor!: rename storage module to store
+
+        - Update all import paths across codebase
+        - Align with naming conventions
+        ```
+    exit_code: 0
+    duration_ms: 6312

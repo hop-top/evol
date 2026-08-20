@@ -1,0 +1,15 @@
+xrr: "1"
+adapter: exec
+fingerprint: 1473c7c7
+recorded_at: "2026-08-20T04:31:01Z"
+payload:
+    stdout: |
+        feat(deps): upgrade viper to 1.21.0
+
+        Config loading changes in v1.20–1.21:
+        - Added support for binding environment variables with custom separators
+        - Improved YAML/TOML parsing error messages
+        - Fixed race condition in concurrent config reads
+        - Enhanced file watcher stability for live config reloads
+    exit_code: 0
+    duration_ms: 9706

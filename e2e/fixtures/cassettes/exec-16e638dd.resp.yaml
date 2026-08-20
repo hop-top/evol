@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: 16e638dd
+recorded_at: "2026-08-20T05:13:30Z"
+payload:
+    stdout: |
+        feat(http): add exponential backoff to retry transport
+
+        Wire exponential backoff into retryTransport and integrate with http client component for improved resilience on transient failures.
+    exit_code: 0
+    duration_ms: 6306

@@ -1,0 +1,12 @@
+xrr: "1"
+adapter: exec
+fingerprint: 783b1b30
+recorded_at: "2026-08-20T05:58:20Z"
+payload:
+    stdout: |
+        feat(deps): upgrade viper to 1.21.0
+
+        Config loading now respects precedence order more consistently.
+        Improved error handling for missing config files and malformed YAML.
+    exit_code: 0
+    duration_ms: 6422

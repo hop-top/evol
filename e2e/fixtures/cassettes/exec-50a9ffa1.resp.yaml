@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: 50a9ffa1
+recorded_at: "2026-08-20T06:20:53Z"
+payload:
+    stdout: |
+        fix(auth): remove deprecated `LegacyAuth` interface
+
+        Use `ModernAuth` instead. This is a breaking change for consumers still depending on the legacy interface.
+    exit_code: 0
+    duration_ms: 6526

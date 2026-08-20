@@ -1,0 +1,13 @@
+xrr: "1"
+adapter: exec
+fingerprint: 95c53f74
+recorded_at: "2026-08-20T05:41:35Z"
+payload:
+    stdout: |
+        fix(auth): remove deprecated LegacyAuth interface
+
+        Use ModernAuth instead. See migration guide in docs/auth-migration.md for upgrading existing code.
+
+        BREAKING CHANGE: LegacyAuth has been removed in favor of ModernAuth
+    exit_code: 0
+    duration_ms: 7351

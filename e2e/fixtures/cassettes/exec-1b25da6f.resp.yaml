@@ -1,0 +1,15 @@
+xrr: "1"
+adapter: exec
+fingerprint: 1b25da6f
+recorded_at: "2026-08-20T06:20:27Z"
+payload:
+    stdout: |
+        Let me write the commit message directly using the Conventional Commits format:
+
+        ```
+        feat(http): add exponential backoff to `retryTransport`
+
+        Exponential backoff reduces request storms during transient failures. Wired into HTTP client component initialization.
+        ```
+    exit_code: 0
+    duration_ms: 8553

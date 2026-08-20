@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: f6d0087f
+recorded_at: "2026-08-20T05:13:10Z"
+payload:
+    stdout: |
+        fix(gateway): add rate limiting to public endpoints
+
+        Prevents abuse and protects service availability by enforcing request quotas on publicly-exposed gateway routes.
+    exit_code: 0
+    duration_ms: 6652

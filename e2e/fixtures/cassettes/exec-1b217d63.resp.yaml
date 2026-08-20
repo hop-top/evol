@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: 1b217d63
+recorded_at: "2026-08-20T04:25:50Z"
+payload:
+    stdout: |
+        fix(storage): rename module to store
+
+        BREAKING CHANGE: storage module renamed to store. Update all imports from `storage` to `store`.
+    exit_code: 0
+    duration_ms: 11202

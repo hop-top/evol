@@ -1,0 +1,14 @@
+xrr: "1"
+adapter: exec
+fingerprint: 1e70e468
+recorded_at: "2026-08-20T05:02:44Z"
+payload:
+    stdout: |
+        fix(adapters): extract retry logic into backoff package
+
+        Retry behavior was scattered across adapters, making it hard to
+        test and reuse. Centralizing into a dedicated package improves
+        testability, reduces duplication, and makes the retry contract
+        explicit.
+    exit_code: 0
+    duration_ms: 8226

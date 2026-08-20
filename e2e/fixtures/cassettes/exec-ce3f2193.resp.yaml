@@ -1,0 +1,13 @@
+xrr: "1"
+adapter: exec
+fingerprint: ce3f2193
+recorded_at: "2026-08-20T05:50:09Z"
+payload:
+    stdout: |4
+        ```
+        feat(auth)!: remove deprecated LegacyAuth interface
+
+        Use ModernAuth instead. Migration guide: https://docs.example.com/auth-migration
+        ```
+    exit_code: 0
+    duration_ms: 7268

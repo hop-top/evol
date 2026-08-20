@@ -1,0 +1,15 @@
+xrr: "1"
+adapter: exec
+fingerprint: a756deb4
+recorded_at: "2026-08-20T06:19:48Z"
+payload:
+    stdout: |
+        Based on the loaded skill at the top of the context, here's your commit message:
+
+        ```
+        refactor(backoff): extract retry logic into standalone package
+
+        Reduces coupling by isolating exponential backoff and retry strategies into a reusable component. Enables sharing retry behavior across adapters without duplicating logic.
+        ```
+    exit_code: 0
+    duration_ms: 7676

@@ -1,0 +1,9 @@
+xrr: "1"
+adapter: exec
+fingerprint: 1892e8a2
+recorded_at: "2026-08-20T06:02:07Z"
+payload:
+    stdout: |
+        I need your approval to check the git diff. Can you approve the Bash command so I can see the changes and write an accurate commit message?
+    exit_code: 0
+    duration_ms: 6739

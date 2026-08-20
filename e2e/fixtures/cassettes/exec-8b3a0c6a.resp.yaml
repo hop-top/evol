@@ -1,0 +1,14 @@
+xrr: "1"
+adapter: exec
+fingerprint: 8b3a0c6a
+recorded_at: "2026-08-20T05:40:37Z"
+payload:
+    stdout: |
+        fix(evol): extract retry logic into backoff package
+
+        Extracted retry/backoff logic into a dedicated `backoff` package to improve
+        code reusability and maintainability. Retry patterns recur across adapters and
+        CLI commands; centralizing them reduces duplication and simplifies future
+        enhancements to backoff strategies.
+    exit_code: 0
+    duration_ms: 7521

@@ -1,0 +1,10 @@
+xrr: "1"
+adapter: exec
+fingerprint: c5810a7f
+recorded_at: "2026-08-20T04:22:26Z"
+payload:
+    argv:
+        - claude.sh
+        - candidate:abdf25559083
+        - provider:claude://haiku
+    stdin: added exponential backoff to retryTransport and wired it into the http client component

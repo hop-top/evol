@@ -1,0 +1,10 @@
+xrr: "1"
+adapter: exec
+fingerprint: 1c10f8e9
+recorded_at: "2026-08-20T04:25:00Z"
+payload:
+    argv:
+        - claude.sh
+        - candidate:abdf25559083
+        - provider:claude://haiku
+    stdin: upgraded viper from 1.19.0 to 1.21.0; summarize the config loading changes in the body

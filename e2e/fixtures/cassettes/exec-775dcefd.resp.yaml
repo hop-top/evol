@@ -1,0 +1,25 @@
+xrr: "1"
+adapter: exec
+fingerprint: 775dcefd
+recorded_at: "2026-08-20T03:54:59Z"
+payload:
+    stdout: |
+        I need to generate a commit message for upgrading viper from 1.19.0 to 1.21.0. Based on the change description you provided and following the Conventional Commits spec, here's the commit message:
+
+        ```
+        build(deps): upgrade viper to 1.21.0
+
+        Config loading behavior updated:
+        - Improved support for environment variable binding
+        - Enhanced configuration file discovery with better fallback handling
+        - Optimized nested key resolution and type coercion
+        ```
+
+        This follows the house style by:
+        - Using `build(deps)` scope for dependency upgrades
+        - Keeping the subject under 72 characters
+        - Using imperative mood ("upgrade" not "upgraded")
+        - Providing a concise body in telegraphese with bullet points for key changes
+        - No mention of tools or co-authors
+    exit_code: 0
+    duration_ms: 13579

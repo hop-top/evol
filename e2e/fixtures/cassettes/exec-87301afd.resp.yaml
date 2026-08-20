@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: 87301afd
+recorded_at: "2026-08-20T05:09:22Z"
+payload:
+    stdout: |
+        feat(http): add exponential backoff to retry transport
+
+        Retries now use exponential backoff with jitter, improving reliability under transient failures and reducing thundering herd effects during service recovery.
+    exit_code: 0
+    duration_ms: 16537

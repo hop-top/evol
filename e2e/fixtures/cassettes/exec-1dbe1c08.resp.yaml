@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: 1dbe1c08
+recorded_at: "2026-08-20T06:22:05Z"
+payload:
+    stdout: |
+        feat(deps): upgrade viper to 1.21.0
+
+        Config loading now supports `ReadConfig` with configurable buffer, YAML 1.2 compliance improvements, and better error handling for malformed files.
+    exit_code: 0
+    duration_ms: 6920

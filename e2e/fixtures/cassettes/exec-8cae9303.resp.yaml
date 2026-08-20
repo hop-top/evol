@@ -1,0 +1,14 @@
+xrr: "1"
+adapter: exec
+fingerprint: 8cae9303
+recorded_at: "2026-08-20T05:27:57Z"
+payload:
+    stdout: |
+        fix!: remove deprecated LegacyAuth interface
+
+        Use the new Auth interface instead. Migration path:
+        - Replace `LegacyAuth` with `Auth` in type annotations
+        - Update method calls to match the new signature
+        - See docs/migration.md for detailed examples
+    exit_code: 0
+    duration_ms: 6682

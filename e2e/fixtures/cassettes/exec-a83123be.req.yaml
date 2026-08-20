@@ -1,0 +1,10 @@
+xrr: "1"
+adapter: exec
+fingerprint: a83123be
+recorded_at: "2026-08-20T04:52:12Z"
+payload:
+    argv:
+        - claude.sh
+        - candidate:0934dfd98b8d
+        - provider:claude://haiku
+    stdin: renamed module storage to store, updating all import paths (breaking change)

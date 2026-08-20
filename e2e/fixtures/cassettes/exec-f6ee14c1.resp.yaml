@@ -1,0 +1,13 @@
+xrr: "1"
+adapter: exec
+fingerprint: f6ee14c1
+recorded_at: "2026-08-20T06:05:18Z"
+payload:
+    stdout: |
+        feat(backoff): extract retry logic into dedicated package
+
+        Consolidates retry and backoff behavior into a reusable, testable module.
+        Reduces coupling in adapter layer; enables cleaner composition of timeout
+        and retry strategies across generators and other subsystems.
+    exit_code: 0
+    duration_ms: 7268

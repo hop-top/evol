@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: c27244f9
+recorded_at: "2026-08-20T05:14:52Z"
+payload:
+    stdout: |
+        feat(deps): upgrade viper to 1.21.0
+
+        Config loading now handles environment variable expansion in nested keys; improved error messages for malformed YAML/TOML structures; deprecated SetConfigFile in favor of SetConfigFileAndType for explicit format specification.
+    exit_code: 0
+    duration_ms: 7319

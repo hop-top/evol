@@ -1,0 +1,15 @@
+xrr: "1"
+adapter: exec
+fingerprint: f888abd1
+recorded_at: "2026-08-20T06:28:15Z"
+payload:
+    stdout: |
+        Using commit-messages to write the commit message for this change.
+
+        fix(ci): pin Go version and enable race detector
+
+        - ensure consistent Go toolchain across CI runs
+        - catch data races during test execution
+        - prevents version drift between local and CI environments
+    exit_code: 0
+    duration_ms: 7465

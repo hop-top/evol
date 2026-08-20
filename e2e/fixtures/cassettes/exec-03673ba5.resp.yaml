@@ -1,0 +1,14 @@
+xrr: "1"
+adapter: exec
+fingerprint: 03673ba5
+recorded_at: "2026-08-20T05:13:52Z"
+payload:
+    stdout: |
+        fix: remove deprecated LegacyAuth interface
+
+        Use ModernAuth instead. This is a breaking change for consumers still
+        relying on LegacyAuth — migrate to the newer interface before upgrading.
+
+        Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>
+    exit_code: 0
+    duration_ms: 6736

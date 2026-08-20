@@ -1,0 +1,28 @@
+xrr: "1"
+adapter: exec
+fingerprint: 1b956f6c
+recorded_at: "2026-08-20T06:03:22Z"
+payload:
+    stdout: |
+        I need you to approve git commands to see the diff. However, based on your description that you've removed the deprecated `LegacyAuth` interface and need to note the replacement, here's the commit message format:
+
+        ```
+        refactor!: remove deprecated LegacyAuth interface
+
+        Use ModernAuth instead. LegacyAuth was deprecated in v2.0 and is
+        now removed as part of the v3.0 breaking change cycle.
+        ```
+
+        Or if you want more specifics about the replacement:
+
+        ```
+        refactor!: remove deprecated LegacyAuth interface
+
+        Migrate to ModernAuth for all authentication flows. LegacyAuth provided
+        backwards compatibility during the v2.x cycle; the replacement handles
+        the same use cases with improved security and performance.
+        ```
+
+        Can you tell me what the specific replacement interface/class is, so I can finalize the commit message?
+    exit_code: 0
+    duration_ms: 12815

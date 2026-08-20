@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: 47ac276c
+recorded_at: "2026-08-20T05:54:59Z"
+payload:
+    stdout: |
+        feat(deps): upgrade viper to 1.21.0
+
+        Config loader no longer requires explicit path registration; paths are inferred from config file discovery. Update any custom loaders that relied on `SetConfigName` + `SetConfigPath` sequencing — new loader respects filesystem order.
+    exit_code: 0
+    duration_ms: 6449

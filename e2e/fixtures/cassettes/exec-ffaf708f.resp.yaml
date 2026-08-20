@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: ffaf708f
+recorded_at: "2026-08-20T04:06:27Z"
+payload:
+    stdout: |
+        feat(deps): upgrade viper to 1.21.0
+
+        Config loading now uses structured binding helpers; improved error messages for missing keys and type conversions. AllSettings() performance improved with internal caching.
+    exit_code: 0
+    duration_ms: 13332

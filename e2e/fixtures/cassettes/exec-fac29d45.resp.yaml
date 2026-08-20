@@ -1,0 +1,13 @@
+xrr: "1"
+adapter: exec
+fingerprint: fac29d45
+recorded_at: "2026-08-20T06:23:20Z"
+payload:
+    stdout: |
+        feat(backoff): extract retry logic into dedicated package
+
+        Extracted exponential backoff and retry orchestration from adapter code into a standalone `backoff` package. Reduces duplication across adapters, centralizes retry policy logic, and makes backoff behavior testable in isolation.
+
+        Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>
+    exit_code: 0
+    duration_ms: 7120

@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: da2e5050
+recorded_at: "2026-08-20T05:51:37Z"
+payload:
+    stdout: |
+        feat(deps): upgrade viper to 1.21.0
+
+        Config loader now supports environment variable defaults via `viperx.EnvDefaults()`. Simplified config initialization by removing manual env fallbacks where viper now handles them natively.
+    exit_code: 0
+    duration_ms: 6768

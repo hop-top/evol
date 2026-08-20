@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: c33e3662
+recorded_at: "2026-08-20T06:24:41Z"
+payload:
+    stdout: |
+        fix(docs): correct typos and refresh README examples
+
+        Minor documentation updates for clarity and current best practices.
+    exit_code: 0
+    duration_ms: 6258

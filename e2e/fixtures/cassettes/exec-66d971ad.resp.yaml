@@ -1,0 +1,16 @@
+xrr: "1"
+adapter: exec
+fingerprint: 66d971ad
+recorded_at: "2026-08-20T05:55:45Z"
+payload:
+    stdout: |
+        Based on the change description you've provided, here's the commit message:
+
+        refactor: extract retry logic into backoff package
+
+        Isolate exponential backoff and retry handling into a dedicated, reusable
+        package to reduce duplication across call sites and improve testability.
+        This separation decouples retry orchestration from caller business logic,
+        making the pattern easier to audit and extend.
+    exit_code: 0
+    duration_ms: 12104

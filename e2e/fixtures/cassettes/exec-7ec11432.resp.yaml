@@ -1,11 +1,11 @@
 xrr: "1"
 adapter: exec
 fingerprint: 7ec11432
-recorded_at: "2026-08-20T03:43:13Z"
+recorded_at: "2026-08-20T06:15:08Z"
 payload:
     stdout: |
-        fix(ci): pin Go version and enable race detector
+        test(ci): enable race detector in Go tests
 
-        Ensure consistent Go version across CI runs and catch data races during testing with the race detector flag.
+        Pinned Go version in workflow and enabled race flag for all test job invocations to catch data races during CI.
     exit_code: 0
-    duration_ms: 8304
+    duration_ms: 6306

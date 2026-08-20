@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: 5cb4b85a
+recorded_at: "2026-08-20T05:37:54Z"
+payload:
+    stdout: |
+        feat(adapters): extract retry logic into backoff package
+
+        Consolidate retry/backoff strategies into a dedicated package for reuse across adapters and improved testability. Reduces duplication and establishes a single source of truth for exponential backoff configuration.
+    exit_code: 0
+    duration_ms: 6199

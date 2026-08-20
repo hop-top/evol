@@ -1,0 +1,23 @@
+xrr: "1"
+adapter: exec
+fingerprint: 687d521a
+recorded_at: "2026-08-20T06:26:29Z"
+payload:
+    stdout: |
+        Based on the context provided and the change description (extracting retry logic into a new backoff package), here's the commit message:
+
+        ```
+        refactor: extract retry logic into `backoff` package
+
+        - centralizes exponential backoff strategy for reuse across adapters
+        - improves testability by isolating retry behavior in dedicated module
+        - reduces duplication of backoff logic across generator implementations
+        ```
+
+        This follows Conventional Commits with:
+        - **Type**: `refactor` (code reorganization without behavior change)
+        - **Scope**: implied by the package extraction
+        - **Subject**: concise description under 72 chars
+        - **Body**: three note-like fragments explaining the motivation (reusability, testability, DRY)
+    exit_code: 0
+    duration_ms: 19557
