@@ -132,6 +132,36 @@ Response:
             "split": "train", "source": "correction"}]}
 ```
 
+### `history`
+
+Per-generation outcome summary for an artifact, shaped for target
+selection (`evol targets`, `evol run --select`). *Added while INTERNAL
+DRAFT.* Adapters that predate it may answer with an adapter error;
+callers degrade to "history unknown".
+
+Request:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `artifact_ref` | string | |
+
+Response:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `generations` | object[] | `{generation, best_score, verdict, provider?}` — one entry per recorded generation, ascending; `best_score` is the best candidate mean in that generation and `verdict` is that candidate's verdict |
+
+```json
+{"evol": "1", "port": "corpus", "action": "history",
+ "artifact_ref": "skills/commit-style"}
+```
+
+```json
+{"evol": "1", "port": "corpus", "action": "history",
+ "generations": [{"generation": 1, "best_score": 0.62, "verdict": "rejected"},
+                 {"generation": 2, "best_score": 0.71, "verdict": "accepted"}]}
+```
+
 ## Notes
 
 - `record` is append-only from the engine's view; dedup and versioning

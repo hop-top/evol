@@ -30,6 +30,11 @@ def reply(payload):
 
 
 if port == "artifactstore":
+    if action == "list":
+        # Skills only; other kinds are empty. Refs chosen so lexical
+        # order differs from insertion order (selection tie-breaks).
+        refs = ["skills/fake", "skills/other"] if req.get("kind") == "skill" else []
+        reply({"refs": refs})
     if action == "load":
         reply({"artifact": {
             "ref": req["ref"], "kind": "skill",
@@ -75,6 +80,19 @@ if port == "corpus":
         with open(os.path.join(out_dir, "record.jsonl"), "a", encoding="utf-8") as f:
             f.write(json.dumps(req) + "\n")
         reply({})
+    if action == "history":
+        # EVOL_FAKE_HISTORY: "" -> empty for all refs; "mixed" ->
+        # skills/fake has history, others none; "error" -> adapter error.
+        mode = os.environ.get("EVOL_FAKE_HISTORY", "")
+        if mode == "error":
+            print("fake corpus: history exploded", file=sys.stderr)
+            sys.exit(3)
+        if mode == "mixed" and req["artifact_ref"] == "skills/fake":
+            reply({"generations": [
+                {"generation": 1, "best_score": 0.45, "verdict": "rejected"},
+                {"generation": 2, "best_score": 0.55, "verdict": "rejected"},
+            ]})
+        reply({"generations": []})
 
 if port == "generator":
     good = os.environ.get("EVOL_FAKE_GOOD") == "1"

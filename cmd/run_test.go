@@ -8,16 +8,32 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 func execRoot(t *testing.T, args ...string) (string, string, error) {
 	t.Helper()
+	resetFlags(rootCmd)
 	var out, errBuf bytes.Buffer
 	rootCmd.SetOut(&out)
 	rootCmd.SetErr(&errBuf)
 	rootCmd.SetArgs(args)
 	err := rootCmd.Execute()
 	return out.String(), errBuf.String(), err
+}
+
+// resetFlags restores every flag on the tree to its default: cobra flag
+// values persist across Execute calls, which leaks state between tests.
+func resetFlags(c *cobra.Command) {
+	c.Flags().VisitAll(func(f *pflag.Flag) {
+		_ = f.Value.Set(f.DefValue)
+		f.Changed = false
+	})
+	for _, sub := range c.Commands() {
+		resetFlags(sub)
+	}
 }
 
 func writeConfig(t *testing.T) string {

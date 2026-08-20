@@ -4,6 +4,8 @@
 # cmd is an argv array; the engine appends nothing — flags belong here.
 
 # Default artifact to evolve; `evol run --artifact <ref>` overrides.
+# Omit entirely to let `evol run --select never-run|worst|stale` pick a
+# target from the store's artifacts and their corpus history.
 artifact: skills/commit-style
 
 ports:

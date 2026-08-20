@@ -230,3 +230,53 @@ func TestAdapterErrors(t *testing.T) {
 		t.Fatal("missing EVOL_CORPUS_ROOT: want error")
 	}
 }
+
+func TestHistorySummarizesGenerations(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("EVOL_CORPUS_ROOT", root)
+	seed(t, root, generationsFile,
+		// generation 1: two candidates; cand-2's mean (0.6) is best.
+		`{"generation":{"artifact_ref":"`+ref+`","number":1},"id":"cand-1","scores":[{"score":0.2},{"score":0.4}],"verdict":"rejected"}`,
+		`{"generation":{"artifact_ref":"`+ref+`","number":1},"id":"cand-2","scores":[{"score":0.6}],"verdict":"rejected"}`,
+		// generation 2: single accepted candidate, mean 0.8.
+		`{"generation":{"artifact_ref":"`+ref+`","number":2},"id":"cand-3","scores":[{"score":0.7},{"score":0.9}],"verdict":"accepted"}`,
+	)
+
+	resp, err := call(t, `{"evol":"1","port":"corpus","action":"history","artifact_ref":"`+ref+`"}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var gens []struct {
+		Generation int     `json:"generation"`
+		BestScore  float64 `json:"best_score"`
+		Verdict    string  `json:"verdict"`
+	}
+	if err := json.Unmarshal(resp["generations"], &gens); err != nil {
+		t.Fatal(err)
+	}
+	if len(gens) != 2 {
+		t.Fatalf("generations = %d, want 2", len(gens))
+	}
+	if gens[0].Generation != 1 || gens[0].BestScore != 0.6 || gens[0].Verdict != "rejected" {
+		t.Errorf("gen1 = %+v, want best 0.6 rejected", gens[0])
+	}
+	if gens[1].Generation != 2 || gens[1].BestScore != 0.8 || gens[1].Verdict != "accepted" {
+		t.Errorf("gen2 = %+v, want best 0.8 accepted", gens[1])
+	}
+}
+
+func TestHistoryEmptyForUnknownArtifact(t *testing.T) {
+	t.Setenv("EVOL_CORPUS_ROOT", t.TempDir())
+
+	resp, err := call(t, `{"evol":"1","port":"corpus","action":"history","artifact_ref":"never/recorded"}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var gens []any
+	if err := json.Unmarshal(resp["generations"], &gens); err != nil {
+		t.Fatal(err)
+	}
+	if len(gens) != 0 {
+		t.Errorf("generations = %v, want empty", gens)
+	}
+}

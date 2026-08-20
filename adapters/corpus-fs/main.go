@@ -24,6 +24,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 )
 
 const (
@@ -132,6 +133,8 @@ func run(stdin interface{ Read([]byte) (int, error) }, stdout interface{ Write([
 		resp, err = handleTabu(root, raw)
 	case "corrections":
 		resp, err = handleCorrections(root, raw)
+	case "history":
+		resp, err = handleHistory(root, raw)
 	default:
 		return fmt.Errorf("unsupported action %q", env.Action)
 	}
@@ -325,6 +328,62 @@ func handleTabu(root string, raw []byte) (any, error) {
 		envelope
 		Entries []tabuEntry `json:"entries"`
 	}{envelope{contractVersion, portName, "tabu"}, entries}, nil
+}
+
+// historyEntry is one generation's summary: the best candidate mean in
+// that generation and that candidate's verdict.
+type historyEntry struct {
+	Generation int     `json:"generation"`
+	BestScore  float64 `json:"best_score"`
+	Verdict    string  `json:"verdict"`
+}
+
+func handleHistory(root string, raw []byte) (any, error) {
+	var req struct {
+		ArtifactRef string `json:"artifact_ref"`
+	}
+	if err := json.Unmarshal(raw, &req); err != nil {
+		return nil, fmt.Errorf("decode history request: %w", err)
+	}
+	dir, err := artifactDir(root, req.ArtifactRef)
+	if err != nil {
+		return nil, err
+	}
+	lines, err := readJSONL[generationLine](filepath.Join(dir, generationsFile))
+	if err != nil {
+		return nil, err
+	}
+
+	best := make(map[int]historyEntry)
+	order := make([]int, 0)
+	for _, l := range lines {
+		gen := l.Generation.Number
+		var sum float64
+		for _, s := range l.Scores {
+			sum += s.Score
+		}
+		mean := 0.0
+		if len(l.Scores) > 0 {
+			mean = sum / float64(len(l.Scores))
+		}
+		cur, ok := best[gen]
+		if !ok {
+			order = append(order, gen)
+		}
+		if !ok || mean > cur.BestScore {
+			best[gen] = historyEntry{Generation: gen, BestScore: mean, Verdict: l.Verdict}
+		}
+	}
+	sort.Ints(order)
+	generations := make([]historyEntry, 0, len(order))
+	for _, gen := range order {
+		generations = append(generations, best[gen])
+	}
+
+	return struct {
+		envelope
+		Generations []historyEntry `json:"generations"`
+	}{envelope{contractVersion, portName, "history"}, generations}, nil
 }
 
 func handleCorrections(root string, raw []byte) (any, error) {

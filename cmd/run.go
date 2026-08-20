@@ -54,6 +54,8 @@ precondition failure · 3 configuration or adapter error.`,
 func init() {
 	runCmd.Flags().String("config", "evol.yaml", "Loop configuration file")
 	runCmd.Flags().String("artifact", "", "Artifact ref to evolve (overrides config)")
+	runCmd.Flags().String("select", engine.SelectNeverRun,
+		"Target selection policy when no artifact is given (never-run|worst|stale)")
 	runCmd.Flags().Bool("dry-run", false, "Print the resolved plan without spawning adapters")
 	rootCmd.AddCommand(runCmd)
 }
@@ -92,9 +94,23 @@ func runRun(cmd *cobra.Command, _ []string) error {
 	if err := cfg.Normalize(); err != nil {
 		return fail(exitConfigError, err)
 	}
+	// Explicit ref (flag, then config) has absolute precedence; without
+	// one, a selection policy picks the target from the store × corpus.
 	if cfg.Artifact == "" {
-		return fail(exitConfigError,
-			errors.New("no artifact ref: set artifact in config or pass --artifact"))
+		policy, _ := cmd.Flags().GetString("select")
+		eng := engine.New(*cfg)
+		eng.Log = cmd.ErrOrStderr()
+		rows, err := eng.Targets(cmd.Context())
+		if err != nil {
+			return fail(exitConfigError, err)
+		}
+		ref, err := engine.SelectTarget(rows, policy)
+		if err != nil {
+			return fail(exitConfigError, err)
+		}
+		cfg.Artifact = ref
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(),
+			"selected %s (policy %s)\n", ref, policy)
 	}
 
 	if dryRun {

@@ -88,6 +88,9 @@ done
 
 # verify wiring — no LLM calls
 e2e/bin/evol run --config e2e/evol.yaml --dry-run --format json
+
+# what's evolvable, and how each artifact has fared so far
+e2e/bin/evol targets --config e2e/evol.yaml
 ```
 
 The repository ships a complete example under [e2e/](e2e/): a
@@ -103,6 +106,10 @@ whole loop can run without an API key.
 
 Exit codes for `evol run`: `0` promoted · `1` no improvement ·
 `2` gate precondition failed · `3` config or adapter error.
+
+Without `--artifact`, `evol run` picks its target by explicit policy
+(`--select never-run|worst|stale`); richer scheduling policies come
+later, on the same seam.
 
 ## Ground rules
 
