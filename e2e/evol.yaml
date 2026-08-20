@@ -21,7 +21,9 @@ ports:
   scorer:
     cmd: [e2e/bin/score-commit.py]
     timeout_seconds: 60
-  # knowledgebase deliberately disabled for gen-1 (optional port).
+  knowledgebase:
+    cmd: ["e2e/bin/ctxt-kb"]
+    timeout_seconds: 30
 
 thresholds:
   delta: 0.05
