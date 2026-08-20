@@ -20,7 +20,7 @@ import (
 const (
 	defaultProviderURI = "anthropic://claude-sonnet-5"
 	maxTokens          = 4096
-	callTimeout        = 60 * time.Second
+	defaultCallTimeout = 60 * time.Second
 )
 
 // factories maps URI schemes to provider constructors. An explicit map
@@ -111,7 +111,7 @@ func newKitClient(uri string) (*kitClient, error) {
 // complete performs one completion call: system + user message, one
 // candidate per call, no retries beyond what the provider SDK does.
 func (c *kitClient) complete(system, user string) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), callTimeout())
 	defer cancel()
 
 	resp, err := c.client.Complete(ctx, llm.Request{
@@ -178,3 +178,15 @@ func resolveProviderURI(getenv func(string) string) (uri, note string) {
 
 // envGetenv is the production getenv.
 func envGetenv(key string) string { return os.Getenv(key) }
+
+// callTimeout returns the per-LLM-call deadline, overridable via
+// EVOL_GENERATOR_TIMEOUT (Go duration, e.g. "180s") for slow local or
+// remote models. Falls back to the 60s default on absent/invalid values.
+func callTimeout() time.Duration {
+	if v := os.Getenv("EVOL_GENERATOR_TIMEOUT"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil && d > 0 {
+			return d
+		}
+	}
+	return defaultCallTimeout
+}
