@@ -1,0 +1,12 @@
+{
+  "artifact": "e2e/artifacts/commit-messages/SKILL.md",
+  "epsilon": 0.01,
+  "provider": "claude://haiku",
+  "scores": {
+    "h01": 0.75,
+    "h02": 0.5,
+    "h03": 0.6667,
+    "h04": 0.75,
+    "h05": 0.8
+  }
+}

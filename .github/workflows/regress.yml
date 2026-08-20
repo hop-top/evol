@@ -1,0 +1,47 @@
+name: regress
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "e2e/**"
+      - "adapters/**"
+      - "internal/**"
+      - "cmd/**"
+      - ".github/workflows/regress.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "e2e/**"
+      - "adapters/**"
+      - "internal/**"
+      - "cmd/**"
+      - ".github/workflows/regress.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  replay:
+    name: Replay-diff gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # >>> kit-managed: toolchain >>>
+      - uses: jdx/mise-action@v2
+        with:
+          install: true
+          cache: true
+      - run: mise run install
+      # <<< kit-managed: toolchain <<<
+
+      - name: Build runner-xrr
+        run: mise exec -- go build -buildvcs=false -o e2e/bin/runner-xrr ./adapters/runner-xrr
+
+      # Replays committed fixtures against the current artifact; scores the
+      # replayed outputs and compares to the committed baseline. Zero agent
+      # calls, zero keys. Skips cleanly (exit 0 with a SKIP line) until the
+      # first promotion commits e2e/fixtures/cassettes + e2e/regress-baseline.json.
+      - name: Replay + drift check
+        run: e2e/bin/regress.sh

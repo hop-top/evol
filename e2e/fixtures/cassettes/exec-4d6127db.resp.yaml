@@ -1,0 +1,13 @@
+xrr: "1"
+adapter: exec
+fingerprint: 4d6127db
+recorded_at: "2026-08-20T03:47:58Z"
+payload:
+    stdout: |
+        fix(ci): pin Go version and enable race detector
+
+        - Pin Go to 1.23 for reproducible builds across CI environments
+        - Enable race detector in test runs to catch data races early
+        - Improves CI reliability and catches concurrency bugs before production
+    exit_code: 0
+    duration_ms: 8677

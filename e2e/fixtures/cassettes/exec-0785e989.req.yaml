@@ -1,0 +1,10 @@
+xrr: "1"
+adapter: exec
+fingerprint: 0785e989
+recorded_at: "2026-08-20T01:59:14Z"
+payload:
+    argv:
+        - claude.sh
+        - candidate:3956e2dbbef6
+        - provider:claude://haiku
+    stdin: reordered dockerfile layers so dependency downloads cache across builds

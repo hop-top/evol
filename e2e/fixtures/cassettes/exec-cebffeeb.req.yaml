@@ -1,0 +1,10 @@
+xrr: "1"
+adapter: exec
+fingerprint: cebffeeb
+recorded_at: "2026-08-20T01:09:59Z"
+payload:
+    argv:
+        - claude.sh
+        - candidate:fc85904bd721
+        - provider:claude://haiku
+    stdin: removed the deprecated v1 config loader and its migration shims (breaking change)

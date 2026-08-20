@@ -1,0 +1,10 @@
+xrr: "1"
+adapter: exec
+fingerprint: 4d6127db
+recorded_at: "2026-08-20T03:47:58Z"
+payload:
+    argv:
+        - claude.sh
+        - candidate:2d1602d3f74b
+        - provider:claude://haiku
+    stdin: pinned the Go version in the continuous integration workflow and enabled the race detector

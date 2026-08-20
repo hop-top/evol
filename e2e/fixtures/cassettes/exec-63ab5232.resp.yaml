@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: 63ab5232
+recorded_at: "2026-08-20T03:46:05Z"
+payload:
+    stdout: |
+        fix(ci): pin Go version and enable race detector
+
+        Ensures consistent CI behavior across builds and catches data race conditions during testing.
+    exit_code: 0
+    duration_ms: 11105

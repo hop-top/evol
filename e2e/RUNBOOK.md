@@ -172,3 +172,42 @@ skill (class: agent-cli = full coding agent; llm-pipe = prompt-through-model):
 UNTESTED means exactly that: the shim encodes the tool's documented
 interface but has not produced a live commit message on this machine —
 statuses above are honest, not aspirational.
+
+## Regression gate (CI replay-diff)
+
+Post-promotion protection: CI replays the promoted artifact's recorded
+holdout interactions and fails on drift — zero agent calls, zero keys.
+
+Two cassette locations, one distinction:
+
+| Dir | State | Purpose |
+|---|---|---|
+| `e2e/cassettes/` | gitignored, runtime | cache-as-you-go during evolution runs (`XRR_MODE=record`) |
+| `e2e/fixtures/cassettes/` | **committed** | frozen regression fixtures for CI replay |
+
+Arming (after every intentional promotion):
+
+```sh
+e2e/bin/regress.sh --update     # copies runtime cassettes -> fixtures,
+                                # replays all holdout cases from fixtures,
+                                # writes e2e/regress-baseline.json
+git add e2e/fixtures e2e/regress-baseline.json && git commit
+```
+
+CI (`.github/workflows/regress.yml`) then runs `e2e/bin/regress.sh` on
+every push/PR touching `e2e/**`, `adapters/**`, `internal/**`, `cmd/**`:
+replay each holdout case against the CURRENT artifact and score the
+replayed output.
+
+- **Miss (shim exit 21)** — the artifact content changed since recording:
+  an unintentional edit fails the gate; an intentional promotion re-arms
+  with `--update`.
+- **Drift** — replay succeeded but a case's score dropped more than
+  epsilon (0.01) vs the committed baseline: the scorer or cases changed
+  out from under the artifact; investigate before re-arming.
+- **Bootstrap** — no fixtures/baseline committed yet: the job SKIPs
+  cleanly (exit 0, `SKIP (bootstrap)` line), never red before the first
+  promotion.
+
+`EVOL_PROVIDER` defaults to `executor_provider` from `e2e/evol.yaml` —
+fixtures only replay under the provider they were recorded with.

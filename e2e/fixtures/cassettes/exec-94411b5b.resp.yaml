@@ -1,0 +1,13 @@
+xrr: "1"
+adapter: exec
+fingerprint: 94411b5b
+recorded_at: "2026-08-20T03:48:22Z"
+payload:
+    stdout: |
+        feat(deps): upgrade viper to 1.21.0
+
+        Viper 1.21.0 introduces improved config merging and environment variable handling.
+        Config loader now properly cascades defaults through environment overrides,
+        reducing need for manual precedence management in setup code.
+    exit_code: 0
+    duration_ms: 12588

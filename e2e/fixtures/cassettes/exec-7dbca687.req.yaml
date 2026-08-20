@@ -1,0 +1,10 @@
+xrr: "1"
+adapter: exec
+fingerprint: 7dbca687
+recorded_at: "2026-08-20T03:52:52Z"
+payload:
+    argv:
+        - claude.sh
+        - candidate:c43a03de43ff
+        - provider:claude://haiku
+    stdin: removed the deprecated LegacyAuth interface (breaking change); note the replacement in the body

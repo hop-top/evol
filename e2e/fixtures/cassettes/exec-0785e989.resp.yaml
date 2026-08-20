@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: 0785e989
+recorded_at: "2026-08-20T01:59:14Z"
+payload:
+    stdout: |
+        feat: reorder Dockerfile layers for improved build cache
+
+        Move dependency installation before source code copy so dependency layers cache across builds, reducing rebuild time when only source changes.
+    exit_code: 0
+    duration_ms: 13909

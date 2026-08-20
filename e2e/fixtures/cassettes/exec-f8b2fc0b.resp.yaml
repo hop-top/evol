@@ -1,0 +1,9 @@
+xrr: "1"
+adapter: exec
+fingerprint: f8b2fc0b
+recorded_at: "2026-08-20T03:47:41Z"
+payload:
+    stdout: |
+        fix(docs): correct typos and refresh examples in README
+    exit_code: 0
+    duration_ms: 8829

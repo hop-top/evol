@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: 1fd1d2b3
+recorded_at: "2026-08-20T01:58:09Z"
+payload:
+    stdout: |
+        fix(rate-limiter): correct off-by-one in sliding window logic
+
+        Sliding window was allowing one extra request beyond the configured limit due to boundary condition in window calculation.
+    exit_code: 0
+    duration_ms: 10523

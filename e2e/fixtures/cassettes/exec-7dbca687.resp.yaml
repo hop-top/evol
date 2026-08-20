@@ -1,0 +1,23 @@
+xrr: "1"
+adapter: exec
+fingerprint: 7dbca687
+recorded_at: "2026-08-20T03:52:52Z"
+payload:
+    stdout: |
+        I need permission to run git commands. However, based on your description, here's the commit message following Conventional Commits:
+
+        ```
+        fix!: remove deprecated LegacyAuth interface
+
+        Replaced by StandardAuth. Migration path: update imports from
+        LegacyAuth to StandardAuth and ensure your implementation conforms
+        to the new interface signature.
+        ```
+
+        This follows the format:
+        - `fix!:` indicates a breaking change (the `!` after the type)
+        - Subject is concise and action-oriented
+        - Body notes the replacement and brief migration guidance
+        - Keeps it telegraphese (minimal, noun phrases)
+    exit_code: 0
+    duration_ms: 26627

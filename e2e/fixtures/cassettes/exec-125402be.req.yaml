@@ -1,0 +1,10 @@
+xrr: "1"
+adapter: exec
+fingerprint: 125402be
+recorded_at: "2026-08-20T01:58:31Z"
+payload:
+    argv:
+        - claude.sh
+        - candidate:3956e2dbbef6
+        - provider:claude://haiku
+    stdin: added a --format json flag to the list command
