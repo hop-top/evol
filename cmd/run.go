@@ -127,6 +127,7 @@ func runRun(cmd *cobra.Command, _ []string) error {
 	res, err := eng.Run(cmd.Context(), cfg.Artifact)
 	switch {
 	case err == nil:
+		runPromotionHook(cmd, cfg, res)
 		return emit(cmd, format, res)
 	case errors.Is(err, engine.ErrNoImprovement):
 		if res != nil {

@@ -80,6 +80,18 @@ executor_mode: replay
 # fixtures.cassette_dir for regression replay.
 # fixtures_dir: .evol/cassettes
 
+# Promotion plumbing (docs/promotion.md):
+# - Git-native versioning: run the fs-artifact adapter with
+#   EVOL_ARTIFACT_GIT=1 and an artifact root inside a git work tree;
+#   every promotion becomes a commit, `evol rollback` restores prior
+#   versions as forward commits.
+# - Post-promotion hook: operator argv run after a successful
+#   promotion (EVOL_PROMOTED_REF / _VERSION / _GIT_COMMIT in env);
+#   non-zero exit warns, never fails the promotion. Releases stay a
+#   separate, operator-gated act.
+# promotion:
+#   hook: ["./scripts/on-promote.sh"]
+
 # Optional: routing write-back. After sweep runs, `evol routing emit`
 # aggregates per-provider evidence from the corpus and hands it to the
 # routing adapter, which writes a kit-llm pool fragment (weights =

@@ -247,6 +247,9 @@ func (e *Engine) Run(ctx context.Context, artifactRef string) (*Result, error) {
 		if accepted != nil {
 			var writeResp struct {
 				Version string `json:"version"`
+				// GitCommit is set by git-native artifact stores; empty
+				// otherwise. Surfaced for post-promotion hooks and audit.
+				GitCommit string `json:"git_commit"`
 			}
 			msg := fmt.Sprintf("evolve %s: %s — %s",
 				artifact.Ref, accepted.Strategy, accepted.Rationale)
@@ -261,6 +264,7 @@ func (e *Engine) Run(ctx context.Context, artifactRef string) (*Result, error) {
 			result.Accepted = true
 			result.AcceptedID = accepted.ID
 			result.NewVersion = writeResp.Version
+			result.GitCommit = writeResp.GitCommit
 			result.BestScore = acceptedMean
 			e.logf("accepted %s as %s@%s", accepted.ID, artifact.Ref, writeResp.Version)
 			return result, nil

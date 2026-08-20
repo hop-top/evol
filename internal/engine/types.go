@@ -119,6 +119,9 @@ type Result struct {
 	Accepted        bool    `json:"accepted"`
 	AcceptedID      string  `json:"accepted_id,omitempty"`
 	NewVersion      string  `json:"new_version,omitempty"`
+	// GitCommit is the promotion commit SHA when the artifact store runs
+	// git-native versioning; empty otherwise.
+	GitCommit       string  `json:"git_commit,omitempty"`
 	BestScore       float64 `json:"best_score"`
 	Generations     int     `json:"generations"`
 	CandidatesTried int     `json:"candidates_tried"`

@@ -96,6 +96,18 @@ type Config struct {
 	// location of the recorded environment (adapter-agnostic; the
 	// engine never inspects it).
 	FixturesDir string `mapstructure:"fixtures_dir" json:"fixtures_dir,omitempty"`
+
+	// Promotion configures post-promotion behavior.
+	Promotion struct {
+		// Hook is an operator-configured argv executed by the CLI after a
+		// successful promotion, with EVOL_PROMOTED_REF,
+		// EVOL_PROMOTED_VERSION, and EVOL_PROMOTED_GIT_COMMIT (possibly
+		// empty) in its environment. A non-zero hook exit logs a warning
+		// and never fails the promotion — the improvement is already
+		// real. No tool is privileged: publish steps, capability
+		// installs, notifications are all just argv.
+		Hook []string `mapstructure:"hook" json:"hook,omitempty"`
+	} `mapstructure:"promotion" json:"promotion,omitempty"`
 }
 
 // primaryProvider is the provider URI the gate compares under: the
