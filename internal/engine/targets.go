@@ -136,9 +136,11 @@ func (e *Engine) Targets(ctx context.Context) ([]TargetRow, error) {
 //   - drift: most negative score trend across recent generations;
 //     trendless rows (<2 generations) rank last; falls back to
 //     never-run when nothing carries a trend.
-//   - kb-churn: attention-starvation proxy — never-evolved first, then
-//     fewest generations (see docs/self-scheduling.md for the honest
-//     limitation and the proposed KnowledgeBase timestamp signal).
+//   - kb-churn: knowledge newer than the last evolution (KB `newest`
+//     vs last generation recorded_at), most-recent knowledge first;
+//     degrades rung by rung to the attention-starvation ladder —
+//     never-evolved first, then fewest generations (see
+//     docs/self-scheduling.md).
 func SelectTarget(rows []TargetRow, policy string) (string, error) {
 	if len(rows) == 0 {
 		return "", ErrNoTargets
