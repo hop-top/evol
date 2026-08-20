@@ -25,10 +25,10 @@ ports:
 
 thresholds:
   delta: 0.05
-  trials: 2
+  trials: 3
 
 budget:
-  generations: 3
+  generations: 5
   max_candidates: 3
 
 holdout: holdout
