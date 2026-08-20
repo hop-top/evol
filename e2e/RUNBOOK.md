@@ -21,7 +21,7 @@ e2e/bin/seed-corpus.sh commit-messages/SKILL.md
 ```
 
 corpus-fs keys stores by `sha256(artifact_ref)[:12]`; the script computes
-the dir and copies `e2e/cases/cases.jsonl` (8 train / 4 holdout) into it.
+the dir and copies `e2e/cases/cases.jsonl` (8 train / 8 holdout) into it.
 
 ## 3. Environment
 
@@ -77,8 +77,8 @@ five-check set scored a vague skill 1.0000 and left the gate no
 headroom). Preamble narration is tolerated by subject extraction in the
 scorer; discipline belongs to the runner prompt.
 
-Measured over the 5 holdout cases × 2 trials (`e2e/bin/calibrate.sh
-<skill> claude://haiku 2`):
+Measured over 5 holdout cases × 2 trials, before the holdout set grew
+to 8 (`e2e/bin/calibrate.sh <skill> claude://haiku 2`):
 
 | Skill | Holdout mean |
 |---|---|
