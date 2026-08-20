@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"time"
 )
 
 // Kinds an ArtifactStore serves (spec/port-artifactstore.md).
@@ -22,11 +23,13 @@ const (
 	// most negative (score decline). Artifacts with fewer than two
 	// generations carry no trend and rank last.
 	SelectDrift = "drift"
-	// SelectKBChurn targets the artifact most starved of attention:
-	// never-evolved first, then fewest generations. v0 proxy — the
-	// KnowledgeBase port carries no timestamps yet, so "knowledge newer
-	// than last evolution" cannot be measured honestly; see
-	// docs/self-scheduling.md for the proposed port addition.
+	// SelectKBChurn targets artifacts whose knowledge moved after their
+	// last evolution: the KnowledgeBase optional `newest` action supplies
+	// a per-ref timestamp, compared against the last generation's
+	// recorded_at. When the signal is absent (KB unconfigured, action
+	// unsupported, no timestamps) the policy degrades down a documented
+	// ladder — churn rows, then clean never-run, then degraded-unknown,
+	// then fewest generations. See docs/self-scheduling.md.
 	SelectKBChurn = "kb-churn"
 )
 
@@ -48,6 +51,15 @@ type TargetRow struct {
 	// declining. Computed when at least two generations exist; the
 	// recent window is the last min(3, n-1) generations.
 	Trend *float64 `json:"trend,omitempty"`
+	// KBNewest is the newest knowledge timestamp matching this ref
+	// (RFC3339), from the KnowledgeBase optional `newest` action; nil
+	// when the KB is unconfigured, the action is unsupported, or nothing
+	// matching carries a timestamp.
+	KBNewest *string `json:"kb_newest,omitempty"`
+	// LastEvolved is the recorded_at of the artifact's last generation
+	// (RFC3339); nil for never-evolved artifacts and rows recorded before
+	// timestamps existed.
+	LastEvolved *string `json:"last_evolved,omitempty"`
 	// Note carries a degradation reason when history was unavailable
 	// (older corpus adapters); such rows count as never-evolved for
 	// selection but rank after clean never-run rows.
@@ -59,6 +71,7 @@ type historyGeneration struct {
 	Generation int     `json:"generation"`
 	BestScore  float64 `json:"best_score"`
 	Verdict    string  `json:"verdict"`
+	RecordedAt string  `json:"recorded_at,omitempty"`
 }
 
 // Targets enumerates every artifact the store serves, joined with its
@@ -97,6 +110,12 @@ func (e *Engine) Targets(ctx context.Context) ([]TargetRow, error) {
 					row.Scores = append(row.Scores, g.BestScore)
 				}
 				row.Trend = computeTrend(row.Scores)
+				if ts := last.RecordedAt; ts != "" {
+					row.LastEvolved = &ts
+				}
+			}
+			if ts := e.kbNewest(ctx, ref); ts != nil {
+				row.KBNewest = ts
 			}
 			rows = append(rows, row)
 		}
@@ -173,6 +192,29 @@ func SelectTarget(rows []TargetRow, policy string) (string, error) {
 		// everywhere): fall back to never-run so the loop still moves.
 		return SelectTarget(sorted, SelectNeverRun)
 	case SelectKBChurn:
+		// Rung 1: measurable churn — knowledge newer than the last
+		// evolution. Most-recent knowledge first; ties break by ref (the
+		// stable sort above already ordered by ref).
+		var churn *TargetRow
+		for i := range sorted {
+			r := &sorted[i]
+			kb, evolved := parseRFC3339(r.KBNewest), parseRFC3339(r.LastEvolved)
+			if kb == nil || evolved == nil || !kb.After(*evolved) {
+				continue
+			}
+			if churn == nil {
+				churn = r
+				continue
+			}
+			ckb := parseRFC3339(churn.KBNewest)
+			if kb.After(*ckb) {
+				churn = r
+			}
+		}
+		if churn != nil {
+			return churn.Ref, nil
+		}
+		// Rungs 2-4: the v0 attention-starvation ladder.
 		for _, r := range sorted {
 			if r.NeverEvolved && r.Note == "" {
 				return r.Ref, nil
@@ -234,4 +276,40 @@ func selectWorst(sorted []TargetRow) (string, error) {
 		return "", ErrNoTargets
 	}
 	return pick.Ref, nil
+}
+
+// kbNewest asks the optional KnowledgeBase `newest` action for the
+// newest knowledge timestamp matching a ref. Every failure mode —
+// unconfigured port, unsupported action, unavailability, absent or
+// unparseable timestamp — degrades to nil; churn selection then falls
+// down its ladder rather than guessing.
+func (e *Engine) kbNewest(ctx context.Context, ref string) *string {
+	if !e.kb.Configured() {
+		return nil
+	}
+	var resp struct {
+		Unavailable bool    `json:"unavailable"`
+		TS          *string `json:"ts"`
+	}
+	if err := e.kb.Call(ctx, "newest", map[string]any{"query": ref}, &resp); err != nil {
+		e.logf("kb newest degraded for %s: %v", ref, err)
+		return nil
+	}
+	if resp.Unavailable || resp.TS == nil || parseRFC3339(resp.TS) == nil {
+		return nil
+	}
+	return resp.TS
+}
+
+// parseRFC3339 parses an optional RFC3339 string; nil in, nil out, and
+// unparseable values degrade to nil rather than erroring.
+func parseRFC3339(s *string) *time.Time {
+	if s == nil {
+		return nil
+	}
+	t, err := time.Parse(time.RFC3339, *s)
+	if err != nil {
+		return nil
+	}
+	return &t
 }

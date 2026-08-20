@@ -106,8 +106,10 @@ if port == "corpus":
             sys.exit(3)
         if mode == "mixed" and req["artifact_ref"] == "skills/fake":
             reply({"generations": [
-                {"generation": 1, "best_score": 0.45, "verdict": "rejected"},
-                {"generation": 2, "best_score": 0.55, "verdict": "rejected"},
+                {"generation": 1, "best_score": 0.45, "verdict": "rejected",
+                 "recorded_at": "2026-08-18T00:00:00Z"},
+                {"generation": 2, "best_score": 0.55, "verdict": "rejected",
+                 "recorded_at": "2026-08-19T12:00:00Z"},
             ]})
         reply({"generations": []})
 
@@ -157,6 +159,16 @@ if port == "scorer":
 if port == "knowledgebase":
     if os.environ.get("EVOL_FAKE_KB") == "unavailable":
         reply({"unavailable": True})
+    if action == "newest":
+        # EVOL_FAKE_KB_NEWEST: "" -> action unsupported (adapter error,
+        # engine degrades); "none" -> ts null; else the RFC3339 value.
+        mode = os.environ.get("EVOL_FAKE_KB_NEWEST", "")
+        if mode == "":
+            print("fake kb: newest unsupported", file=sys.stderr)
+            sys.exit(3)
+        if mode == "none":
+            reply({"ts": None})
+        reply({"ts": mode})
     reply({"passages": [{"text": "a fact", "source": "notes/x", "score": 0.8}]})
 
 print(f"fake adapter: unhandled {port}/{action}", file=sys.stderr)

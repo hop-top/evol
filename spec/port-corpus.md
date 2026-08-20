@@ -64,6 +64,7 @@ Request:
 | `candidates[].strategy` | string? | generator strategy that produced the candidate; recorded so tabu keeps its strategy dimension (empty on baseline evidence rows) |
 | `candidates[].provider` | string? | optional executor provider URI these scores were produced under; sweep rows always carry it |
 | `candidates[].fixtures` | object? | optional `{cassette_dir}` — recorded-environment location pinned with a promoted run, for regression replay |
+| `candidates[].recorded_at` | string? | RFC3339 wall-clock stamped by the engine at record time; the artifact's last-evolution clock for target selection. Additive post-publication per the [versioning rules](README.md#versioning--stability); nothing fingerprints or replays it |
 
 Response: empty object (envelope only).
 
@@ -154,7 +155,7 @@ Response:
 
 | Field | Type | Notes |
 |-------|------|-------|
-| `generations` | object[] | `{generation, best_score, verdict, provider?}` — one entry per recorded generation, ascending; `best_score` is the best candidate mean in that generation and `verdict` is that candidate's verdict |
+| `generations` | object[] | `{generation, best_score, verdict, provider?, recorded_at?}` — one entry per recorded generation, ascending; `best_score` is the best candidate mean in that generation and `verdict` is that candidate's verdict; `recorded_at` is the latest stamp among the generation's non-evidence rows (absent for rows recorded before stamps existed) |
 
 ```json
 {"evol": "1", "port": "corpus", "action": "history",

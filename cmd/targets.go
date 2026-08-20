@@ -15,7 +15,10 @@ var targetsCmd = &cobra.Command{
 joins each with its corpus history: generations recorded, last best
 score, last verdict, and the recent score trend (negative = declining).
 Rows whose history the corpus cannot serve degrade to unknowns with a
-note. JSON output carries the raw per-generation best scores.
+note. JSON output carries the raw per-generation best scores plus, when
+available, kb_newest (newest knowledge timestamp matching the ref) and
+last_evolved (recorded_at of the last generation) — the kb-churn
+signal pair.
 
 The same rows drive 'evol run --select' when no artifact is given —
 scheduling 'evol run --select drift' is how the loop picks its own next
@@ -68,8 +71,8 @@ func printTargets(cmd *cobra.Command, rows []engine.TargetRow) {
 		_, _ = fmt.Fprintln(out, "no artifacts found")
 		return
 	}
-	_, _ = fmt.Fprintf(out, "%-40s %-12s %4s  %-10s %-8s %-10s %s\n",
-		"REF", "KIND", "GENS", "LAST BEST", "TREND", "VERDICT", "STATUS")
+	_, _ = fmt.Fprintf(out, "%-40s %-12s %4s  %-10s %-8s %-12s %-10s %s\n",
+		"REF", "KIND", "GENS", "LAST BEST", "TREND", "LAST-EVOLVED", "VERDICT", "STATUS")
 	for _, r := range rows {
 		score := "-"
 		if r.LastBest != nil {
@@ -83,6 +86,10 @@ func printTargets(cmd *cobra.Command, rows []engine.TargetRow) {
 		if verdict == "" {
 			verdict = "-"
 		}
+		evolved := "-"
+		if r.LastEvolved != nil && len(*r.LastEvolved) >= 10 {
+			evolved = (*r.LastEvolved)[:10]
+		}
 		status := "evolved"
 		switch {
 		case r.Note != "":
@@ -90,8 +97,8 @@ func printTargets(cmd *cobra.Command, rows []engine.TargetRow) {
 		case r.NeverEvolved:
 			status = "never evolved"
 		}
-		_, _ = fmt.Fprintf(out, "%-40s %-12s %4d  %-10s %-8s %-10s %s\n",
-			truncate(r.Ref, 40), r.Kind, r.Generations, score, trend, verdict, status)
+		_, _ = fmt.Fprintf(out, "%-40s %-12s %4d  %-10s %-8s %-12s %-10s %s\n",
+			truncate(r.Ref, 40), r.Kind, r.Generations, score, trend, evolved, verdict, status)
 	}
 }
 
