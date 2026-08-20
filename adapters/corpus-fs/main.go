@@ -149,6 +149,8 @@ func run(stdin interface{ Read([]byte) (int, error) }, stdout interface{ Write([
 		resp, err = handleCorrections(root, raw)
 	case "add-cases":
 		resp, err = handleAddCases(root, raw)
+	case "add-corrections":
+		resp, err = handleAddCorrections(root, raw)
 	case "promote-cases":
 		resp, err = handlePromoteCases(root, raw)
 	case "history":
@@ -242,8 +244,9 @@ func appendJSONL[T any](path string, items []T) error {
 
 func handleCases(root string, raw []byte) (any, error) {
 	var req struct {
-		ArtifactRef string `json:"artifact_ref"`
-		Split       string `json:"split,omitempty"`
+		ArtifactRef        string `json:"artifact_ref"`
+		Split              string `json:"split,omitempty"`
+		IncludeQuarantined bool   `json:"include_quarantined,omitempty"`
 	}
 	if err := json.Unmarshal(raw, &req); err != nil {
 		return nil, fmt.Errorf("decode cases request: %w", err)
@@ -260,7 +263,7 @@ func handleCases(root string, raw []byte) (any, error) {
 	seen := make(map[string]bool)
 	cases := make([]caseEntry, 0, len(all))
 	for _, c := range all {
-		if c.Quarantined {
+		if c.Quarantined && !req.IncludeQuarantined {
 			continue
 		}
 		if req.Split != "" && c.Split != req.Split {
@@ -584,4 +587,67 @@ func handleCorrections(root string, raw []byte) (any, error) {
 		envelope
 		Cases []caseEntry `json:"cases"`
 	}{envelope{contractVersion, portName, "corrections"}, cases}, nil
+}
+
+// handleAddCorrections records human-authored corrections. Corrections
+// are never quarantined — a human wrote them; they join the eval pool
+// at the next eval-set build via the `corrections` action. Dedup is by
+// id and by content against the existing corrections store.
+func handleAddCorrections(root string, raw []byte) (any, error) {
+	var req struct {
+		ArtifactRef string      `json:"artifact_ref"`
+		Corrections []caseEntry `json:"corrections"`
+	}
+	if err := json.Unmarshal(raw, &req); err != nil {
+		return nil, fmt.Errorf("decode add-corrections request: %w", err)
+	}
+	dir, err := artifactDir(root, req.ArtifactRef)
+	if err != nil {
+		return nil, err
+	}
+	existing, err := readJSONL[caseEntry](filepath.Join(dir, correctionsFile))
+	if err != nil {
+		return nil, err
+	}
+	known := make(map[string]bool, len(existing))
+	usedIDs := make(map[string]bool, len(existing))
+	for _, c := range existing {
+		known[contentKey(c)] = true
+		usedIDs[c.ID] = true
+	}
+
+	added := make([]caseEntry, 0, len(req.Corrections))
+	ids := make([]string, 0, len(req.Corrections))
+	duplicates := 0
+	for _, c := range req.Corrections {
+		if c.ID == "" {
+			return nil, errors.New("add-corrections: correction id is required")
+		}
+		if c.Input == "" {
+			return nil, errors.New("add-corrections: correction input is required")
+		}
+		c.Source = "correction"
+		c.Quarantined = false
+		key := contentKey(c)
+		if known[key] || usedIDs[c.ID] {
+			duplicates++
+			continue
+		}
+		known[key] = true
+		usedIDs[c.ID] = true
+		added = append(added, c)
+		ids = append(ids, c.ID)
+	}
+	if len(added) > 0 {
+		if err := appendJSONL(filepath.Join(dir, correctionsFile), added); err != nil {
+			return nil, err
+		}
+	}
+
+	return struct {
+		envelope
+		Added      int      `json:"added"`
+		Duplicates int      `json:"duplicates"`
+		IDs        []string `json:"ids"`
+	}{envelope{contractVersion, portName, "add-corrections"}, len(added), duplicates, ids}, nil
 }

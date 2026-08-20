@@ -23,6 +23,7 @@ Request:
 |-------|------|-------|
 | `artifact_ref` | string | artifact under evolution |
 | `split` | string? | `train`, `val`, or `holdout`; omit for all |
+| `include_quarantined` | bool? | when true, quarantined cases are included (review tooling); default false preserves gating semantics — additive-optional per the [versioning rules](README.md) |
 
 Response:
 
@@ -31,8 +32,10 @@ Response:
 | `cases` | object[] | `{id, input, expected, split, source}` |
 | `cases[].source` | string | provenance: `golden`, `synthetic`, `mined`, `correction` |
 
-Quarantined cases (see `add-cases`) are NEVER served by `cases` — they
+Quarantined cases (see `add-cases`) are never served to the gating
+pool: without `include_quarantined` they are omitted entirely, and they
 enter the eval pool only after `promote-cases` clears them.
+`include_quarantined` exists for review tooling, not for runs.
 
 ```json
 {"evol": "1", "port": "corpus", "action": "cases",
@@ -232,6 +235,43 @@ Response:
 ```json
 {"evol": "1", "port": "corpus", "action": "promote-cases",
  "promoted": 1, "missing": []}
+```
+
+### `add-corrections`
+
+Record human-authored corrections. Corrections are **not** quarantined
+— a human wrote them; they are served by `corrections` and merged into
+the gating pool at the next eval-set build. Additive-optional action
+per the [versioning rules](README.md); pre-dating adapters may error
+and callers degrade.
+
+Request:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `artifact_ref` | string | |
+| `corrections` | object[] | `{id, input, expected?, split?}`; `id` and `input` required |
+
+Response:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `added` | int | corrections recorded |
+| `duplicates` | int | skipped (id or content already present) |
+| `ids` | string[] | ids recorded this call |
+
+```json
+{"evol": "1", "port": "corpus", "action": "add-corrections",
+ "artifact_ref": "skills/commit-style",
+ "corrections": [{"id": "corr-004",
+                  "input": "Commit message for a security patch",
+                  "expected": "fix type; no vulnerability details in subject",
+                  "split": "train"}]}
+```
+
+```json
+{"evol": "1", "port": "corpus", "action": "add-corrections",
+ "added": 1, "duplicates": 0, "ids": ["corr-004"]}
 ```
 
 ## Notes

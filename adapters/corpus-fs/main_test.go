@@ -447,3 +447,94 @@ func mustUnmarshal(t *testing.T, raw json.RawMessage, into any) {
 		t.Fatal(err)
 	}
 }
+
+func TestCasesIncludeQuarantined(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("EVOL_CORPUS_ROOT", root)
+	seed(t, root, casesFile,
+		`{"id":"c1","input":"a","expected":"x","split":"train","source":"golden"}`,
+		`{"id":"q1","input":"b","expected":"y","split":"train","source":"synthetic","quarantined":true}`,
+	)
+
+	// Default: quarantined excluded (gating semantics preserved).
+	resp, err := call(t, `{"evol":"1","port":"corpus","action":"cases","artifact_ref":"`+ref+`"}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var cases []caseEntry
+	if err := json.Unmarshal(resp["cases"], &cases); err != nil {
+		t.Fatal(err)
+	}
+	if len(cases) != 1 || cases[0].ID != "c1" {
+		t.Fatalf("default cases = %+v, want only c1", cases)
+	}
+
+	// include_quarantined: both served, quarantine flag visible.
+	resp, err = call(t, `{"evol":"1","port":"corpus","action":"cases","artifact_ref":"`+ref+`","include_quarantined":true}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(resp["cases"], &cases); err != nil {
+		t.Fatal(err)
+	}
+	if len(cases) != 2 {
+		t.Fatalf("include_quarantined cases = %+v, want 2", cases)
+	}
+	var quar *caseEntry
+	for i := range cases {
+		if cases[i].ID == "q1" {
+			quar = &cases[i]
+		}
+	}
+	if quar == nil || !quar.Quarantined {
+		t.Fatalf("q1 missing or not flagged quarantined: %+v", cases)
+	}
+}
+
+func TestAddCorrectionsRoundTripAndDedup(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("EVOL_CORPUS_ROOT", root)
+
+	// First write creates the store; source forced, never quarantined.
+	resp, err := call(t, `{"evol":"1","port":"corpus","action":"add-corrections","artifact_ref":"`+ref+`",
+		"corrections":[{"id":"corr-1","input":"revert commit message","expected":"revert: original subject","split":"train","source":"golden","quarantined":true}]}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var added int
+	if err := json.Unmarshal(resp["added"], &added); err != nil || added != 1 {
+		t.Fatalf("added = %s (%v), want 1", resp["added"], err)
+	}
+
+	// Served by the corrections action with source correction, unquarantined.
+	resp, err = call(t, `{"evol":"1","port":"corpus","action":"corrections","artifact_ref":"`+ref+`"}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var cases []caseEntry
+	if err := json.Unmarshal(resp["cases"], &cases); err != nil {
+		t.Fatal(err)
+	}
+	if len(cases) != 1 || cases[0].ID != "corr-1" || cases[0].Source != "correction" || cases[0].Quarantined {
+		t.Fatalf("corrections = %+v, want corr-1/correction/unquarantined", cases)
+	}
+
+	// Same id again: duplicate. Same content, new id: duplicate too.
+	resp, err = call(t, `{"evol":"1","port":"corpus","action":"add-corrections","artifact_ref":"`+ref+`",
+		"corrections":[{"id":"corr-1","input":"different","expected":""},{"id":"corr-2","input":"revert commit message","expected":"revert: original subject"}]}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var dups int
+	if err := json.Unmarshal(resp["duplicates"], &dups); err != nil || dups != 2 {
+		t.Fatalf("duplicates = %s (%v), want 2", resp["duplicates"], err)
+	}
+
+	// Missing id / input are adapter errors.
+	if _, err := call(t, `{"evol":"1","port":"corpus","action":"add-corrections","artifact_ref":"`+ref+`","corrections":[{"input":"x"}]}`); err == nil {
+		t.Fatal("missing id accepted")
+	}
+	if _, err := call(t, `{"evol":"1","port":"corpus","action":"add-corrections","artifact_ref":"`+ref+`","corrections":[{"id":"corr-9"}]}`); err == nil {
+		t.Fatal("missing input accepted")
+	}
+}
