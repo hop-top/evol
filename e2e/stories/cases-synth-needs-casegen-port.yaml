@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/hop-top/kit/main/contracts/story-schema.json
+schema_version: "1"
+story_id: evol.cases.synth-needs-casegen-port
+title: Ask for case synthesis before a casegen adapter is bound
+binary: evol
+intent: |
+  Case synthesis is opt-in twice over: it needs its own casegen port
+  binding, and even then its output lands quarantined until a human
+  promotes it. The dangerous failure is a synthesis path that silently
+  falls back to some other generator when the configured one is absent.
+  Instead evol refuses with a config-class exit that names the exact
+  key to set — ports.casegen.cmd — so the agent edits one line instead
+  of guessing at the wiring.
+steps:
+  - id: synth_unbound
+    intent: |
+      Request synthetic cases under a config with no casegen port and
+      receive the refusal naming the missing config key.
+    invoke: ["evol", "cases", "synth", "--config", "e2e/evol.yaml", "--artifact", "commit-messages/SKILL.md", "--format", "json"]
+    capture: [exit_code, stderr]

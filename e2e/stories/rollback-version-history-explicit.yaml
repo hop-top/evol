@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/hop-top/kit/main/contracts/story-schema.json
+schema_version: "1"
+story_id: evol.rollback.version-history-explicit
+title: Roll back against a store that keeps no version history
+binary: evol
+intent: |
+  Rollback restores a prior artifact version, which only means
+  something when the store actually serves version history. The
+  dangerous failure is a rollback that quietly no-ops, or a history
+  query answered with an invented empty list, leaving the agent
+  believing the artifact was restored. Instead the filesystem store in
+  plain content-hash mode refuses loudly and the message spells out
+  what enables history — git-native mode via EVOL_ARTIFACT_GIT=1 with
+  an artifact root inside a git work tree — so the operator upgrades
+  the store instead of trusting a phantom rollback.
+steps:
+  - id: rollback_without_history
+    intent: |
+      Request a rollback under the plain filesystem store and receive
+      the refusal that names git-native mode as the enabling switch.
+    invoke: ["evol", "rollback", "--config", "e2e/evol.yaml", "--artifact", "commit-messages/SKILL.md"]
+    capture: [exit_code, stderr]
