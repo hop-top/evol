@@ -4,84 +4,113 @@
 [![12-factor AI-CLI](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/hop-top/evol/main/.12fcc.json)](https://github.com/hop-top/evol/blob/main/.12fcc.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**You have a skill file your agent works from. You think it's mediocre.
-You rewrite it. Is it better?**
+**evol rewrites the skill files, prompts, and configs your agent works
+from — and proves, statistically, whether the rewrite was actually
+better.**
 
-Most answers to that question are vibes. You read the diff, it reads
-nicer, you commit. Sometimes you A/B it against a handful of prompts and
-call the higher number a win — on five cases, one trial each, with no
-notion of whether the gap survives resampling.
+It is an evaluation loop with a promotion gate: propose candidate
+revisions, run them against real cases, score them, and promote only
+what clears a mean threshold **and** a paired-bootstrap significance
+test. Its most useful output is a rejection.
 
-evol is the loop that answers it properly, and its main job is telling
-you **no**. Across five recorded live runs it judged 30 candidate
-revisions and rejected 26. Of the four it accepted, the first was a text
-reflow that beat the baseline mean on trial noise — the gate at the time
-checked the mean and nothing else, a human caught it in the diff, and
-the loop grew a paired-bootstrap significance test so it can't recur.
-The other three each cleared both conditions.
+On the record so far: **30 candidates judged, 26 rejected**, one
+verified promotion at **+17% relative, p = 0.0002**.
 
-That is the product. Not "it improves your prompts" — **it can tell
-whether anything improved.**
+---
 
-## The result it has produced
+## What sets it apart
 
-One artifact, one domain, fully reproducible:
+**1. It tells you *no*, with statistics.**
+The gate is `mean ≥ baseline + δ` **and** `paired-bootstrap p ≤ 0.05`,
+seeded and reproducible. The pairing unit is the *case*, not the trial,
+so re-running the same case cannot manufacture significance. Below 8
+paired cases it disables the test and says so rather than pretending.
+→ [the reject record](e2e/runs/gen1-generations.jsonl)
 
-| | |
-|---|---|
-| Artifact | `commit-messages/SKILL.md` (deliberately mediocre, in `e2e/artifacts/`) |
-| Baseline holdout mean | **0.7049** |
-| Promoted holdout mean | **0.8236** (+17% relative) |
-| Significance | **p = 0.0002**, seeded paired bootstrap |
-| Eval | 8 holdout cases × 3 trials |
-| Verdict | diff-inspected: a genuine semantic upgrade, not a reflow |
+**2. Any agent CLI. None privileged.**
+A four-line runner contract — stdin, two env vars, stdout. Eight
+reference shims ship (`claude`, `codex`, `gemini`, `opencode`, `foo`,
+`fabric`, `llm`, `ollama`), each ~15 lines. Your own harness is a shim
+away; there is no integration to wait for.
+→ [`e2e/bin/runners/`](e2e/bin/runners/)
 
-Evidence is `e2e/runs/gen1-improvement.json`; the full generation
-history, rejects included, is `e2e/runs/gen1-generations.jsonl`. Cite
-those, not this paragraph.
+**3. Any model, local or hosted — zero keys required.**
+Eleven provider schemes by URI: `anthropic`, `openai` (and any
+OpenAI-compatible endpoint via `?base_url=`), `openrouter`, `xai`,
+`groq`, `together`, `fireworks`, `deepseek`, `mistral`, `ollama`,
+`routellm`. The entire loop runs against local Ollama or LM Studio with
+no API key at all. The provider is recorded per candidate, so model
+choice becomes part of the eval space rather than a config afterthought.
+→ [provider table](adapters/generator-llm/README.md)
 
-The ablation matters more than the headline. Runs 1–4 proposed
-twenty-seven candidates from the artifact text alone; the only one that
-ever passed was the reflow that passed on noise. Run 5 changed exactly
-one variable — candidate proposals were grounded in retrieved knowledge
-through the KnowledgeBase port — and **all three** of its candidates
-cleared the full gate, at p = 0.0002, 0.0041, and 0.0009.
-**Grounding, not scale.**
+**4. Not just skills.**
+Four artifact kinds — `skill`, `prompt`, `command`, `tool-config` — and
+it points at the files you already have. No migration, no proprietary
+format.
 
-> **Status: pre-alpha code, published spec.** The port contracts in
-> [spec/](spec/) are published v1 (`evol: "1"`, additive-only evolution
-> — the commitment is in [spec/publishing.md](spec/publishing.md)),
-> released only after the loop demonstrated the verified improvement
-> above. The CLI and reference adapters remain pre-alpha: flags and
-> layouts may change. There is no installable release yet.
+**5. Extend it in any language. No SDK.**
+Ports are one JSON object in, one out, over stdio. The proof is a
+third-party KnowledgeBase adapter written in one file of standard-library
+Python, from the spec text alone, zero evol code imported, in roughly one
+sitting. Six contracts are published v1 under an additive-only
+commitment.
+→ [the outsider's account](examples/third-party/obsidian-kb/)
 
-## What breaks without this
+**6. Reproducible after the fact.**
+Cassette record/replay keys on candidate content hash + provider + case
+input, so a promotion can be re-verified without spending an API call —
+the CI regression gate does exactly that, with **zero keys in CI**. Every
+candidate, verdict, and rationale lands in a corpus; rejects feed back to
+the generator as a tabu list so it stops re-proposing last week's
+failure.
 
-If you are building an agent self-improvement loop, these are the
-failure modes evol exists to close. Each one is a real bug found in a
-real system, including this one:
+---
 
-- **The loop that can't improve anything.** An optimizer that mutates
-  the wrong field and writes back output identical to its input. Every
-  run reports success. Nothing changed.
-- **Winning on noise.** "Any improvement > 0" on five holdout rows is
-  a coin flip with extra steps. evol's run 2 promoted a reflow this way
-  before the significance gate existed.
-- **Grading your own homework.** Synthetic eval cases generated from
-  the artifact's own text reward the artifact's existing blind spots.
-  evol refuses to synthesize without knowledge-base grounding, and
-  quarantines what it does generate until a human promotes it.
-- **A loop with no memory.** Regenerate the eval set each run, discard
-  the rejects, and the generator re-proposes last week's failure
-  forever. evol writes every verdict back — accepted and rejected — and
-  feeds the reject history to the generator as a tabu list.
-- **Untrustworthy A/B.** Baseline and candidate sharing one process,
-  one environment, one set of live API calls that answer differently
-  each time. evol runs each candidate in a throwaway profile and can
-  freeze the whole environment behind recorded cassettes.
-- **Silent decay after promotion.** Nothing re-checks a promoted
-  artifact. evol commits a cassette-backed regression gate that runs in
-  CI with zero API keys.
+## How it compares
+
+Three things a researcher is usually choosing between:
+
+| | Hand-rolled eval script | Prompt optimizers<br>(DSPy GEPA/MIPROv2) | Agent self-evolution repos | **evol** |
+|---|---|---|---|---|
+| **Promotion gated on significance** | rarely | n/a — optimizes, doesn't gate | typically "improvement > 0" | **mean + paired bootstrap** |
+| **Keeps rejects as memory** | no | no | usually discarded | **corpus + tabu** |
+| **Agent CLI** | yours only | n/a | usually one, coupled | **any, via runner contract** |
+| **Model** | yours | configurable | often pinned | **11 schemes, local or hosted** |
+| **Deterministic replay** | no | no | rare | **cassettes, zero-key CI gate** |
+| **Extensible without a fork** | n/a | Python | Python | **any language, JSON/stdio** |
+| **Operates on your existing files** | yes | signatures/programs | `SKILL.md` | **skill, prompt, command, tool-config** |
+| **Maturity** | — | production | early | **pre-alpha code, published spec** |
+
+**Optimizers and evol are not rivals.** DSPy optimizes; evol decides
+whether the result earned promotion. An optimizer drops in as a
+Generator adapter — that seam exists precisely so it can.
+
+A detailed, receipts-first audit against one named public
+implementation — including where evol's own loop failed — is in the
+[Self-Evolution Scorecard](https://claude.ai/code/artifact/16e72074-05e2-4d33-87bb-3ca7d1ac5193).
+
+---
+
+## Is this for you?
+
+**Use evol if** you have an artifact an agent reads (a skill, prompt,
+command, or tool config), a way to invoke that agent from a shell, and a
+way to score its output — programmatically or by rubric.
+
+**Don't use evol if** any of these hold:
+
+- **You have fewer than 8 eval cases.** The significance test disables
+  itself and you are back to mean-only gating, which is what produced
+  this project's one bad promotion.
+- **You can't score outputs.** No scorer, no loop. evol will not invent
+  a number.
+- **You want it to write your cases from your artifact.** It refuses —
+  cases synthesized from the artifact alone reward that artifact's own
+  blind spots. Synthesis requires knowledge grounding, and its output
+  stays quarantined until a human promotes it.
+- **You need an installable release today.** There isn't one yet.
+
+---
 
 ## How it works
 
@@ -98,83 +127,14 @@ real system, including this one:
                                                           Audit ⇒ run ledger
 ```
 
-The engine owns control flow only. Every I/O exchange crosses a
-**port** — a versioned JSON contract spoken over process boundaries.
-Implementations are **adapters**: standalone executables in any
-language. The engine never links adapter code.
+The engine owns control flow only. Every I/O exchange crosses a **port**
+— a versioned JSON contract spoken over process boundaries.
+Implementations are **adapters**: standalone executables in any language.
+The engine never links adapter code, which is why swapping the model, the
+agent, the knowledge base, or the optimizer is a config change rather
+than a fork.
 
-### The gate
-
-A candidate is promoted only if **both** hold:
-
-```
-mean(candidate) ≥ mean(baseline) + delta        # thresholds.delta
-paired_bootstrap_p ≤ sig_level                  # thresholds.sig_level, default 0.05
-```
-
-A one-sided paired bootstrap over 10,000 resamples, seeded
-(`thresholds.sig_seed`, default 1) so p-values reproduce exactly. The
-pairing unit is the **case**, not the trial: trials collapse to a
-per-case mean first, so running the same case more times cannot
-manufacture significance. Below **8 paired cases** the test is
-automatically disabled and the run falls back to mean-only gating with a
-logged warning — it refuses to pretend a p-value from five samples means
-anything. A candidate that clears the mean but fails significance is
-rejected, with that rationale recorded.
-
-### Ports
-
-Six contracts are published v1 in [spec/](spec/); Audit is a draft
-introduced after publication.
-
-| Port | Purpose | Reference adapters |
-|------|---------|--------------------|
-| [ArtifactStore](spec/port-artifactstore.md) | load / write / version the artifact | [fs-artifact](adapters/fs-artifact/) — git-native versioning + restore |
-| [Generator](spec/port-generator.md) | propose candidate revisions | [generator-llm](adapters/generator-llm/) — mutation strategies, tabu-aware, provider URIs |
-| [Executor](spec/port-executor.md) | run a candidate against an eval case | [executor-apx](adapters/executor-apx/) — subprocess, +cassette replay, +profile isolation |
-| [Corpus](spec/port-corpus.md) | cases, verdicts, tabu history, corrections | [corpus-fs](adapters/corpus-fs/) — file-backed |
-| [Scorer](spec/port-scorer.md) | score a transcript against a case | [scorer-eva](adapters/scorer-eva/); the e2e example uses a checked-in Python scorer |
-| [KnowledgeBase](spec/port-knowledgebase.md) | grounding for proposals + synthesis *(optional)* | [ctxt-kb](adapters/ctxt-kb/), plus a [third-party Python adapter](examples/third-party/obsidian-kb/) |
-| [Audit](spec/port-audit.md) *(draft)* | run ledger *(optional)* | [audit-tlc](adapters/audit-tlc/) (tracker-backed), [audit-fs](adapters/audit-fs/) (file-backed) |
-
-Supporting adapters, same wire protocol: [ben-gate](adapters/ben-gate/)
-(benchmark regression gate), [casegen-llm](adapters/casegen-llm/)
-(grounded case synthesis), [cases-crtx](adapters/cases-crtx/) (mine eval
-cases from recorded agent sessions), [routing-emit](adapters/routing-emit/)
-(model-routing config from recorded evidence), and
-[runner-xrr](adapters/runner-xrr/) (cassette record/replay wrapper).
-
-## The two seams that matter
-
-**Ports are JSON over stdio.** One request object on stdin, one response
-on stdout, non-zero exit means adapter error. Any language, no SDK. The
-proof is [examples/third-party/obsidian-kb/](examples/third-party/obsidian-kb/):
-a KnowledgeBase adapter in one file of standard-library Python, written
-against the spec text alone with zero evol code imported, plus six
-conformance fixture triples. Contract-read to working adapter: roughly
-one sitting. Its author also logged five genuine spec ambiguities they
-hit — unset-config semantics, envelope echo, score scale, `append`
-targeting, trailing newlines — and those are open feedback, not yet
-resolved in the contracts.
-
-**The runner contract makes the agent swappable.** The system under
-evolution is whatever runs the artifact — an agent CLI, an LLM pipe,
-your own harness. The reference executor spawns any command conforming
-to a four-line contract:
-
-```
-stdin   case input
-env     EVOL_CANDIDATE_REF  path to the candidate artifact body
-        EVOL_PROVIDER       optional model URI; interpretation is the runner's
-stdout  agent output only
-exit≠0  run failure (recorded as data, not an adapter error)
-```
-
-Reference shims live in `e2e/bin/runners/` — `claude`, `codex`,
-`gemini`, `opencode` (agent CLIs) and `foo`, `fabric`, `llm`, `ollama`
-(LLM pipes) — each roughly fifteen lines. Four are smoke-tested live;
-four are honestly marked untested. **No tool is privileged**: bring any
-runner by writing one shim.
+---
 
 ## Quick start
 
@@ -196,22 +156,122 @@ e2e/bin/evol run --config e2e/evol.yaml --dry-run --format json
 e2e/bin/evol targets --config e2e/evol.yaml
 ```
 
-The repository ships the complete worked example under [e2e/](e2e/):
-the mediocre commit-message skill, 16 golden cases (8 train / 8
-holdout), a scoring contract, eight runner shims, and committed
-regression fixtures. [e2e/RUNBOOK.md](e2e/RUNBOOK.md) walks the live
-loop end to end, including calibration — the eval is tuned so a
-baseline lands ~0.63–0.72 and a well-written skill reaches ~0.91. If you
-swap the agent-under-test model, re-run `e2e/bin/calibrate.sh`; an
-uncalibrated eval silently makes the gate either unreachable or trivial.
+The repo ships a complete worked example under [e2e/](e2e/): a
+deliberately mediocre commit-message skill, 16 golden cases (8 train /
+8 holdout), a scoring contract, eight runner shims, and committed
+regression fixtures. [**e2e/RUNBOOK.md**](e2e/RUNBOOK.md) walks the live
+loop end to end.
 
-**Local models are a first-class path.** The generator takes provider
-URIs (`ollama://llama3.2:3b?base_url=http://localhost:11434`,
-`anthropic://claude-sonnet-5`, and others via `hop.top/kit`'s LLM
-layer), and runners can point at local backends the same way — the whole
-loop can run without an API key.
+> **Calibrate before you trust a verdict.** The example eval is tuned so
+> the mediocre baseline lands ~0.63–0.72 and a well-written skill reaches
+> ~0.91. Swap the agent-under-test model and re-run
+> `e2e/bin/calibrate.sh` — an uncalibrated eval silently makes the gate
+> either unreachable or trivial.
 
-## CLI
+---
+
+## The evidence
+
+<details>
+<summary><b>One verified improvement, and the 26 rejections that make it
+credible</b></summary>
+
+| | |
+|---|---|
+| Artifact | `commit-messages/SKILL.md` (deliberately mediocre) |
+| Baseline holdout mean | **0.7049** |
+| Promoted holdout mean | **0.8236** (+17% relative) |
+| Significance | **p = 0.0002**, seeded paired bootstrap |
+| Eval | 8 holdout cases × 3 trials |
+| Verdict | diff-inspected: a genuine semantic upgrade, not a reflow |
+
+Evidence: [`e2e/runs/gen1-improvement.json`](e2e/runs/gen1-improvement.json).
+Full history including every reject:
+[`e2e/runs/gen1-generations.jsonl`](e2e/runs/gen1-generations.jsonl).
+
+**The ablation matters more than the headline.** Of 27 candidates
+proposed from the artifact text alone, exactly one ever passed — a text
+reflow that beat the mean on trial noise, back when the gate checked the
+mean and nothing else. A human caught it in the diff, reverted it, and
+the significance gate exists because of it. Run 5 changed one variable —
+proposals grounded in retrieved knowledge through the KnowledgeBase port
+— and all three of its candidates cleared the full gate, at p = 0.0002,
+0.0041, and 0.0009. **Grounding, not scale.**
+
+The claim is narrow and stays narrow: one artifact, one domain. Read it
+as "evol measured one improvement and rejected twenty-six
+non-improvements," not "evol improves agents."
+
+</details>
+
+---
+
+## Reference
+
+<details>
+<summary><b>The gate</b> — mean delta plus paired-bootstrap significance</summary>
+
+A candidate is promoted only if **both** hold:
+
+```
+mean(candidate) ≥ mean(baseline) + delta        # thresholds.delta
+paired_bootstrap_p ≤ sig_level                  # thresholds.sig_level, default 0.05
+```
+
+One-sided paired bootstrap over 10,000 resamples, seeded
+(`thresholds.sig_seed`, default 1) so p-values reproduce exactly. Trials
+collapse to a per-case mean before pairing, so extra trials cannot
+manufacture significance. Below 8 paired cases the test is disabled and
+the run falls back to mean-only gating with a logged warning. A candidate
+that clears the mean but fails significance is rejected, with that
+rationale recorded.
+
+</details>
+
+<details>
+<summary><b>Ports and adapters</b> — six contracts published v1, thirteen
+reference adapters</summary>
+
+| Port | Purpose | Reference adapters |
+|------|---------|--------------------|
+| [ArtifactStore](spec/port-artifactstore.md) | load / write / version the artifact | [fs-artifact](adapters/fs-artifact/) — git-native versioning + restore |
+| [Generator](spec/port-generator.md) | propose candidate revisions | [generator-llm](adapters/generator-llm/) — mutation strategies, tabu-aware, provider URIs |
+| [Executor](spec/port-executor.md) | run a candidate against an eval case | [executor-apx](adapters/executor-apx/) — subprocess, +cassette replay, +profile isolation |
+| [Corpus](spec/port-corpus.md) | cases, verdicts, tabu history, corrections | [corpus-fs](adapters/corpus-fs/) — file-backed |
+| [Scorer](spec/port-scorer.md) | score a transcript against a case | [scorer-eva](adapters/scorer-eva/); the e2e example uses a checked-in Python scorer |
+| [KnowledgeBase](spec/port-knowledgebase.md) | grounding for proposals + synthesis *(optional)* | [ctxt-kb](adapters/ctxt-kb/), plus a [third-party Python adapter](examples/third-party/obsidian-kb/) |
+| [Audit](spec/port-audit.md) *(draft)* | run ledger *(optional)* | [audit-tlc](adapters/audit-tlc/), [audit-fs](adapters/audit-fs/) |
+
+Supporting adapters, same wire protocol:
+[ben-gate](adapters/ben-gate/) (benchmark regression gate),
+[casegen-llm](adapters/casegen-llm/) (grounded case synthesis),
+[cases-crtx](adapters/cases-crtx/) (mine cases from recorded sessions),
+[routing-emit](adapters/routing-emit/) (model-routing config from
+evidence), [runner-xrr](adapters/runner-xrr/) (cassette record/replay).
+
+Wire protocol and versioning promise: [spec/README.md](spec/README.md)
+and [spec/publishing.md](spec/publishing.md).
+
+</details>
+
+<details>
+<summary><b>The runner contract</b> — how any agent CLI plugs in</summary>
+
+```
+stdin   case input
+env     EVOL_CANDIDATE_REF  path to the candidate artifact body
+        EVOL_PROVIDER       optional model URI; interpretation is the runner's
+stdout  agent output only
+exit≠0  run failure (recorded as data, not an adapter error)
+```
+
+Eight shims live in [`e2e/bin/runners/`](e2e/bin/runners/) — four
+smoke-tested live, four honestly marked untested.
+
+</details>
+
+<details>
+<summary><b>CLI surface</b> — seven verbs</summary>
 
 ```sh
 evol run                      # one evolution run; --artifact or --select, --dry-run
@@ -225,30 +285,35 @@ evol runs list | show <id>    # read the audit ledger
 evol routing emit             # model-routing config from recorded evidence
 ```
 
-Exit codes for `evol run`: `0` promoted · `1` no improvement ·
-`2` gate precondition failed · `3` config or adapter error. Other verbs
-reuse the same codes; notably `cases synth` exits `2` when the knowledge
-base yields no grounding — the circular-eval guard refusing to invent
-cases from the artifact alone.
+Exit codes for `evol run`: `0` promoted · `1` no improvement · `2` gate
+precondition failed · `3` config or adapter error. Other verbs reuse
+them; notably `cases synth` exits `2` when the knowledge base yields no
+grounding.
 
 On promotion, a configurable hook (`promotion.hook`) hands off to any
 publisher with `EVOL_PROMOTED_REF`, `EVOL_PROMOTED_VERSION`, and
-`EVOL_PROMOTED_GIT_COMMIT` in the environment. Setting
-`EVOL_ARTIFACT_GIT=1` makes promotions and rollbacks git-native. The
-hook is a CLI concern, not an engine one: the engine's contract ends at
-"artifact written, corpus recorded" — what happens next is operator
-policy. See [docs/promotion.md](docs/promotion.md).
+`EVOL_PROMOTED_GIT_COMMIT` set. `EVOL_ARTIFACT_GIT=1` makes promotions
+and rollbacks git-native. See [docs/promotion.md](docs/promotion.md).
 
-Without `--artifact`, `evol run` picks its own target by explicit
-policy: `--select never-run | worst | stale | drift | kb-churn`. `drift`
-chases the most negative score trend across recent generations;
+</details>
+
+<details>
+<summary><b>Target selection</b> — five policies, including self-scheduling</summary>
+
+Without `--artifact`, `evol run` picks its own target:
+`--select never-run | worst | stale | drift | kb-churn`.
+
+`drift` chases the most negative score trend across recent generations.
 `kb-churn` chases artifacts whose grounding knowledge moved since the
 last evolution — on real KB timestamps, with a documented four-rung
 degrade ladder when that signal is absent. A cron firing
 `--select kb-churn` is a loop that schedules itself against world
 evidence. See [docs/self-scheduling.md](docs/self-scheduling.md).
 
-## Ground rules
+</details>
+
+<details>
+<summary><b>Design rules</b> — the non-negotiables</summary>
 
 - **Write-back is engine behavior, not adapter courtesy.** Every
   candidate and verdict lands in the corpus. A loop without memory is
@@ -261,55 +326,51 @@ evidence. See [docs/self-scheduling.md](docs/self-scheduling.md).
   capability. A missing signal produces a documented proxy ladder, never
   invented data.
 - **A scorer that cannot score must fail loudly.** Most ports have two
-  failure planes (adapter error vs. recorded run failure); scorers get
-  one, because a fabricated number corrupts every downstream verdict.
-- **Determinism is the executor implementation's promise, not the
-  interface's.** The reference executor can freeze the environment with
-  recorded cassettes and isolate candidates in throwaway profiles; a
-  plain subprocess is valid but weaker.
+  failure planes; scorers get one, because a fabricated number corrupts
+  every downstream verdict.
 - **Model choice is data.** The provider that produced each candidate is
-  recorded with it — model comparison is part of the eval space, not a
-  config afterthought.
-- **Nothing ships on tests alone.** Every capability here has been
-  exercised against real binaries and real models at least once. Bugs
-  found *only* that way: stale adapter binaries silently serving old
-  contracts, cassette identity keyed on reassembled instead of source
-  content, a relevance ranker letting a 10-token note outrank the
-  authoritative one.
+  recorded with it.
+- **Nothing ships on tests alone.** Bugs found *only* by live exercise:
+  stale adapter binaries serving old contracts, cassette identity keyed
+  on reassembled instead of source content, a relevance ranker letting a
+  10-token note outrank the authoritative one.
 
-## Layout
+</details>
 
-```
-spec/        port contracts, published v1 (wire protocol, one file per port)
-adapters/    reference adapters, one directory per implementation
-cmd/         CLI verbs
-internal/    loop engine, gating, significance, target selection, port client
-e2e/         runnable example: artifact, cases, contract, runbook, fixtures
-examples/    third-party adapter proof (zero-dep Python KnowledgeBase)
-docs/        per-capability notes, each with honest limitations
-```
+---
 
-Capability docs: [self-scheduling](docs/self-scheduling.md) ·
-[synthesis](docs/synthesis.md) · [review](docs/review.md) ·
-[promotion](docs/promotion.md) · [audit](docs/audit.md) ·
-[routing write-back](docs/routing-writeback.md)
+## Status and limitations
 
-## Known limitations
+**Pre-alpha code, published spec.** The port contracts in [spec/](spec/)
+are published v1 (`evol: "1"`, additive-only — the commitment is in
+[spec/publishing.md](spec/publishing.md)), released only after the loop
+demonstrated the verified improvement above. The CLI and reference
+adapters remain pre-alpha: flags and layouts may change.
 
-- No released, installable version. Blocked on an upstream tag-shape
-  question; `go install` is not yet a supported path.
-- The scorer's LLM-judge tier is code-complete upstream but not landed —
-  scoring today is programmatic and contract-based.
-- Session mining is converter-only: `cases-crtx` turns recorded session
-  envelopes into eval cases, but no live capture pipeline feeds it.
-- Conformance fixtures exist only for KnowledgeBase. House rule: a port
-  gets fixtures once a *second* real adapter exists for it
+- **No installable release.** Blocked on an upstream tag-shape question;
+  `go install` is not a supported path yet.
+- **Scoring is programmatic today.** The LLM-judge tier landed upstream
+  in the eval engine but the installed build here predates it.
+- **Session mining is converter-only.** `cases-crtx` turns recorded
+  session envelopes into cases; no live capture pipeline feeds it.
+- **Conformance fixtures exist only for KnowledgeBase.** House rule: a
+  port gets fixtures once a *second* real adapter exists for it
   ([spec/conformance-plan.md](spec/conformance-plan.md)).
-- The file-backed corpus documents itself as the interim implementation;
-  an indexed successor belongs behind the same port.
-- **The claim here is narrow.** One artifact, one domain, one verified
-  improvement. Do not read it as "evol improves agents." Read it as
-  "evol measured one improvement and rejected twenty-two non-improvements."
+- **The file-backed corpus is the interim implementation.** An indexed
+  successor belongs behind the same port.
+
+---
+
+## Docs
+
+[RUNBOOK](e2e/RUNBOOK.md) (run the loop) ·
+[spec/](spec/README.md) (implement a port) ·
+[self-scheduling](docs/self-scheduling.md) ·
+[synthesis](docs/synthesis.md) ·
+[review](docs/review.md) ·
+[promotion](docs/promotion.md) ·
+[audit](docs/audit.md) ·
+[routing write-back](docs/routing-writeback.md)
 
 ## Development
 
