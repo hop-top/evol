@@ -103,3 +103,12 @@ Response: empty object (envelope only).
 Adapters report unavailability per action call; exit code stays 0. Exit
 non-zero only for adapter faults (bad config, malformed request) — see
 the [wire protocol](README.md#wire-protocol).
+
+## Wire notes (from second-implementer feedback)
+
+- Responses SHOULD echo `evol`, `port`, and `action`; engines MUST NOT
+  require the echo (treat it as informational).
+- An unset or missing knowledge source is `{"unavailable": true}` with
+  exit 0 — adapter errors (non-zero exit) are reserved for malformed
+  requests and internal failures.
+- A single trailing newline after the response object is permitted.

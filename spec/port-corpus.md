@@ -1,6 +1,6 @@
 # Port: Corpus
 
-> Part of the [evol port contracts](README.md) — INTERNAL DRAFT, `evol: "1"`.
+> Part of the [evol port contracts](README.md) — published, `evol: "1"`.
 
 The loop's memory: eval cases, candidate verdicts, tabu history, and
 human corrections, keyed by artifact ref. **Write-back is mandatory
