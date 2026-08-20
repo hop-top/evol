@@ -8,7 +8,7 @@ loop's job is to measurably improve holdout scores.
 
 ```sh
 mise exec -- go build -o e2e/bin/evol .
-for a in fs-artifact generator-llm executor-apx corpus-fs scorer-eva; do
+for a in artifact-fs generator-llm executor-apx corpus-fs scorer-eva; do
   mise exec -- go build -o e2e/bin/$a ./adapters/$a
 done
 ```

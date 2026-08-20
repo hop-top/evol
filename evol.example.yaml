@@ -11,7 +11,7 @@ artifact: skills/commit-style
 
 ports:
   artifactstore:
-    cmd: [evol-adapter-fs-artifact]
+    cmd: [evol-adapter-artifact-fs]
     timeout_seconds: 30
   generator:
     cmd: [evol-adapter-generator-llm]
@@ -90,7 +90,7 @@ executor_mode: replay
 # fixtures_dir: .evol/cassettes
 
 # Promotion plumbing (docs/promotion.md):
-# - Git-native versioning: run the fs-artifact adapter with
+# - Git-native versioning: run the artifact-fs adapter with
 #   EVOL_ARTIFACT_GIT=1 and an artifact root inside a git work tree;
 #   every promotion becomes a commit, `evol rollback` restores prior
 #   versions as forward commits.

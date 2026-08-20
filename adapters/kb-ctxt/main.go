@@ -1,4 +1,4 @@
-// Command ctxt-kb adapts the evol KnowledgeBase port onto the ctxt CLI.
+// Command kb-ctxt adapts the evol KnowledgeBase port onto the ctxt CLI.
 //
 // One JSON request on stdin, one JSON response on stdout. The knowledge
 // daemon being down is data, not an error: any action may answer
@@ -85,7 +85,7 @@ type adapter struct {
 
 func main() {
 	if err := run(os.Stdin, os.Stdout); err != nil {
-		fmt.Fprintf(os.Stderr, "ctxt-kb: %v\n", err)
+		fmt.Fprintf(os.Stderr, "kb-ctxt: %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -342,5 +342,5 @@ func msEnv(key string, fallback int) time.Duration {
 }
 
 func diag(format string, args ...any) {
-	fmt.Fprintf(os.Stderr, "ctxt-kb: "+format+"\n", args...)
+	fmt.Fprintf(os.Stderr, "kb-ctxt: "+format+"\n", args...)
 }

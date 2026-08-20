@@ -1,4 +1,4 @@
-// Command fs-artifact implements the evol ArtifactStore port over a
+// Command artifact-fs implements the evol ArtifactStore port over a
 // filesystem directory. One JSON request on stdin, one JSON response
 // on stdout; non-zero exit with stderr diagnostics on adapter errors.
 //
@@ -73,7 +73,7 @@ func main() {
 
 func run(stdin io.Reader, stdout, stderr io.Writer, getenv func(string) string) int {
 	fail := func(format string, args ...any) int {
-		_, _ = fmt.Fprintf(stderr, "fs-artifact: "+format+"\n", args...)
+		_, _ = fmt.Fprintf(stderr, "artifact-fs: "+format+"\n", args...)
 		return 1
 	}
 
@@ -112,7 +112,7 @@ func run(stdin io.Reader, stdout, stderr io.Writer, getenv func(string) string) 
 		resp.Artifact = art
 	case "write":
 		if req.Message != "" {
-			_, _ = fmt.Fprintf(stderr, "fs-artifact: write %q: %s\n", req.Ref, req.Message)
+			_, _ = fmt.Fprintf(stderr, "artifact-fs: write %q: %s\n", req.Ref, req.Message)
 		}
 		gitMode := gitVersioning(root, getenv)
 		if gitMode {
@@ -224,7 +224,7 @@ func write(root, ref, frontmatter, body string) (string, error) {
 	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return "", err
 	}
-	tmp, err := os.CreateTemp(dir, ".fs-artifact-*")
+	tmp, err := os.CreateTemp(dir, ".artifact-fs-*")
 	if err != nil {
 		return "", err
 	}

@@ -145,7 +145,7 @@ mise trust && mise run install
 # engine + adapters the example config uses
 # (run under mise: it sets GOFLAGS=-buildvcs=false, needed in worktrees)
 mise exec -- go build -o e2e/bin/evol .
-for a in fs-artifact generator-llm executor-apx corpus-fs ctxt-kb; do
+for a in artifact-fs generator-llm executor-apx corpus-fs kb-ctxt; do
   mise exec -- go build -o e2e/bin/$a ./adapters/$a
 done
 
@@ -234,16 +234,16 @@ reference adapters</summary>
 
 | Port | Purpose | Reference adapters |
 |------|---------|--------------------|
-| [ArtifactStore](spec/port-artifactstore.md) | load / write / version the artifact | [fs-artifact](adapters/fs-artifact/) — git-native versioning + restore |
+| [ArtifactStore](spec/port-artifactstore.md) | load / write / version the artifact | [artifact-fs](adapters/artifact-fs/) — git-native versioning + restore |
 | [Generator](spec/port-generator.md) | propose candidate revisions | [generator-llm](adapters/generator-llm/) — mutation strategies, tabu-aware, provider URIs |
 | [Executor](spec/port-executor.md) | run a candidate against an eval case | [executor-apx](adapters/executor-apx/) — subprocess, +cassette replay, +profile isolation |
 | [Corpus](spec/port-corpus.md) | cases, verdicts, tabu history, corrections | [corpus-fs](adapters/corpus-fs/) — file-backed |
 | [Scorer](spec/port-scorer.md) | score a transcript against a case | [scorer-eva](adapters/scorer-eva/); the e2e example uses a checked-in Python scorer |
-| [KnowledgeBase](spec/port-knowledgebase.md) | grounding for proposals + synthesis *(optional)* | [ctxt-kb](adapters/ctxt-kb/), plus a [third-party Python adapter](examples/third-party/obsidian-kb/) |
+| [KnowledgeBase](spec/port-knowledgebase.md) | grounding for proposals + synthesis *(optional)* | [kb-ctxt](adapters/kb-ctxt/), plus a [third-party Python adapter](examples/third-party/obsidian-kb/) |
 | [Audit](spec/port-audit.md) *(draft)* | run ledger *(optional)* | [audit-tlc](adapters/audit-tlc/), [audit-fs](adapters/audit-fs/) |
 
 Supporting adapters, same wire protocol:
-[ben-gate](adapters/ben-gate/) (benchmark regression gate),
+[gate-ben](adapters/gate-ben/) (benchmark regression gate),
 [casegen-llm](adapters/casegen-llm/) (grounded case synthesis),
 [cases-crtx](adapters/cases-crtx/) (mine cases from recorded sessions),
 [routing-emit](adapters/routing-emit/) (model-routing config from

@@ -54,8 +54,8 @@ delivery, not a prerequisite for writing adapters.
 |------|----------------------|---------------|----------|
 | Corpus | `corpus-fs` (JSONL dir, stdlib-only) | evaluation-store SQLite backend — `corpus-fs`'s own README names it as its replacement behind the same port | closest: the schema mapping already exists in the store |
 | Executor | `executor-apx` (layered subprocess / cassette / profile) | container + HTTP-record executor (docker + VCR-style), the "weaker but valid" plain implementation the port text already anticipates | close: contract explicitly designed for both |
-| KnowledgeBase | `ctxt-kb` (knowledge daemon CLI) | an Obsidian-vault adapter (zero-dependency, third-party-style) is in progress — the port file itself lists a notes dir, wiki, or vector store as qualifying | closest: second adapter under construction; fixtures land with it |
-| ArtifactStore | `fs-artifact` (filesystem, content-hash versions) | git-backed store (SHA versions) — the fs adapter's README defers git-native versioning as a later iteration | medium: same layout, version semantics differ |
+| KnowledgeBase | `kb-ctxt` (knowledge daemon CLI) | an Obsidian-vault adapter (zero-dependency, third-party-style) is in progress — the port file itself lists a notes dir, wiki, or vector store as qualifying | closest: second adapter under construction; fixtures land with it |
+| ArtifactStore | `artifact-fs` (filesystem, content-hash versions) | git-backed store (SHA versions) — the fs adapter's README defers git-native versioning as a later iteration | medium: same layout, version semantics differ |
 | Generator | `generator-llm` (LLM mutation strategies) | a prompt-optimizer bridge (e.g. a DSPy-based proposer) — the port text promises "the engine cannot tell the difference" | furthest: second adapter is a real project, not a variant |
 
 When any port's second adapter lands, that port gets fixtures in the

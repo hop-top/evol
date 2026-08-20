@@ -4,7 +4,7 @@ artifact: commit-messages/SKILL.md
 
 ports:
   artifactstore:
-    cmd: [e2e/bin/fs-artifact]
+    cmd: [e2e/bin/artifact-fs]
     timeout_seconds: 30
   generator:
     cmd: [e2e/bin/generator-llm]
@@ -22,7 +22,7 @@ ports:
     cmd: [e2e/bin/score-commit.py]
     timeout_seconds: 60
   knowledgebase:
-    cmd: ["e2e/bin/ctxt-kb"]
+    cmd: ["e2e/bin/kb-ctxt"]
     timeout_seconds: 30
 
 thresholds:

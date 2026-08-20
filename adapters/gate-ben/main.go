@@ -1,4 +1,4 @@
-// Command ben-gate implements a draft evol Gate port over the ben
+// Command gate-ben implements a draft evol Gate port over the ben
 // benchmark runner. ben has no baseline/threshold/fail-on-regression
 // concept of its own (it exits 0 regardless of outcome), so this
 // adapter runs the suite, fetches the pinned baseline run, and computes
@@ -89,7 +89,7 @@ func main() {
 func run(stdin io.Reader, stdout, stderr io.Writer, getenv func(string) string) int {
 	req, err := decodeRequest(stdin)
 	if err != nil {
-		errf(stderr, "ben-gate: %v\n", err)
+		errf(stderr, "gate-ben: %v\n", err)
 		return 1
 	}
 
@@ -97,7 +97,7 @@ func run(stdin io.Reader, stdout, stderr io.Writer, getenv func(string) string) 
 	if v := getenv("EVOL_BEN_TIMEOUT"); v != "" {
 		d, err := time.ParseDuration(v)
 		if err != nil {
-			errf(stderr, "ben-gate: invalid EVOL_BEN_TIMEOUT %q: %v\n", v, err)
+			errf(stderr, "gate-ben: invalid EVOL_BEN_TIMEOUT %q: %v\n", v, err)
 			return 1
 		}
 		timeout = d
@@ -113,12 +113,12 @@ func run(stdin io.Reader, stdout, stderr io.Writer, getenv func(string) string) 
 
 	candRun, err := benJSON(ctx, stderr, benBin, "run", req.Suite, "--format", "json")
 	if err != nil {
-		errf(stderr, "ben-gate: candidate run: %v\n", err)
+		errf(stderr, "gate-ben: candidate run: %v\n", err)
 		return 1
 	}
 	candRow, err := pickCandidate(candRun, req.CandidateRef)
 	if err != nil {
-		errf(stderr, "ben-gate: candidate run %s: %v\n", candRun.RunID, err)
+		errf(stderr, "gate-ben: candidate run %s: %v\n", candRun.RunID, err)
 		return 1
 	}
 
@@ -138,12 +138,12 @@ func run(stdin io.Reader, stdout, stderr io.Writer, getenv func(string) string) 
 
 	baseRun, err := benJSON(ctx, stderr, benBin, "show", req.Baseline.RunID, "--format", "json")
 	if err != nil {
-		errf(stderr, "ben-gate: baseline show %s: %v\n", req.Baseline.RunID, err)
+		errf(stderr, "gate-ben: baseline show %s: %v\n", req.Baseline.RunID, err)
 		return 1
 	}
 	baseRow, err := pickCandidate(baseRun, req.CandidateRef)
 	if err != nil {
-		errf(stderr, "ben-gate: baseline run %s: %v\n", req.Baseline.RunID, err)
+		errf(stderr, "gate-ben: baseline run %s: %v\n", req.Baseline.RunID, err)
 		return 1
 	}
 
@@ -296,7 +296,7 @@ func metricValue(c *benCandidate, name string) (float64, bool) {
 func emit(stdout, stderr io.Writer, resp response) int {
 	enc := json.NewEncoder(stdout)
 	if err := enc.Encode(resp); err != nil {
-		errf(stderr, "ben-gate: encode response: %v\n", err)
+		errf(stderr, "gate-ben: encode response: %v\n", err)
 		return 1
 	}
 	return 0

@@ -115,7 +115,7 @@ if not holdout:
     sys.exit(1)
 
 # The engine never hands runners the source file — it stages a reassembled
-# document (fs-artifact splitFrontmatter -> engine stage). Cassette identity
+# document (artifact-fs splitFrontmatter -> engine stage). Cassette identity
 # is the STAGED content hash, so regress must stage identically:
 #   split : first "---\n" fence; fm keeps its trailing newline; body starts
 #           right after the closing fence line's newline

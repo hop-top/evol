@@ -1,4 +1,4 @@
-# fs-artifact
+# artifact-fs
 
 ArtifactStore adapter over a plain filesystem directory. Implements the
 [artifactstore port contract](../../spec/port-artifactstore.md): one JSON
@@ -30,7 +30,7 @@ Files matching none of these are invisible to `list`. Hidden directories
 
 ```sh
 echo '{"evol":"1","port":"artifactstore","action":"load","ref":"skills/commit-style/SKILL.md"}' \
-  | EVOL_ARTIFACT_ROOT=/path/to/artifacts fs-artifact
+  | EVOL_ARTIFACT_ROOT=/path/to/artifacts artifact-fs
 ```
 
 Writes are atomic (temp file + rename in the target directory). The

@@ -86,7 +86,7 @@ func TestRollbackExplicitTarget(t *testing.T) {
 func TestRollbackNoHistoryAdapterError(t *testing.T) {
 	dir := t.TempDir()
 	bin := filepath.Join(dir, "fake-store-nohist")
-	script := "#!/bin/sh\necho 'fs-artifact: versions requires git-native mode' >&2\nexit 1\n"
+	script := "#!/bin/sh\necho 'artifact-fs: versions requires git-native mode' >&2\nexit 1\n"
 	if err := os.WriteFile(bin, []byte(script), 0o700); err != nil { //nolint:gosec // test fixture executable
 		t.Fatal(err)
 	}

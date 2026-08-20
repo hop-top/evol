@@ -141,7 +141,7 @@ func TestWriteThenLoadRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, e := range entries {
-		if strings.HasPrefix(e.Name(), ".fs-artifact-") {
+		if strings.HasPrefix(e.Name(), ".artifact-fs-") {
 			t.Errorf("leftover temp file %s", e.Name())
 		}
 	}

@@ -1,4 +1,4 @@
-# ctxt-kb
+# kb-ctxt
 
 KnowledgeBase port adapter backed by the ctxt CLI. Implements `spec/port-knowledgebase.md`: one JSON request on
 stdin, one JSON response on stdout.
@@ -37,7 +37,7 @@ unknown action, missing required fields.
 
 ```sh
 echo '{"evol":"1","port":"knowledgebase","action":"search","query":"commit conventions","limit":3}' \
-  | ctxt-kb
+  | kb-ctxt
 ```
 
 ## Deliberately not implemented (v0)

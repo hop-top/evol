@@ -14,11 +14,11 @@ import (
 var binPath string
 
 func TestMain(m *testing.M) {
-	dir, err := os.MkdirTemp("", "ctxt-kb-bin")
+	dir, err := os.MkdirTemp("", "kb-ctxt-bin")
 	if err != nil {
 		panic(err)
 	}
-	binPath = filepath.Join(dir, "ctxt-kb")
+	binPath = filepath.Join(dir, "kb-ctxt")
 	build := exec.Command("go", "build", "-buildvcs=false", "-o", binPath, ".") //nolint:gosec // binPath is a test-owned temp path
 	build.Stderr = os.Stderr
 	if err := build.Run(); err != nil {

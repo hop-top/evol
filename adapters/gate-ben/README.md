@@ -1,4 +1,4 @@
-# ben-gate
+# gate-ben
 
 Gate adapter over the [ben](https://github.com/hop-top/ben) benchmark
 runner. ben measures and ranks but has no baseline, threshold, or
@@ -70,7 +70,7 @@ echo '{"evol":"1","port":"gate","action":"check",
   "suite":"core",
   "metrics":[{"name":"latency_ms","direction":"min","threshold_delta":5},
              {"name":"accuracy","direction":"max","threshold_delta":0.02}]}' \
-  | ben-gate
+  | gate-ben
 ```
 
 ## Deliberately not implemented (v0)
