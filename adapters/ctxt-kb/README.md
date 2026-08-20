@@ -1,7 +1,6 @@
 # ctxt-kb
 
-KnowledgeBase port adapter backed by the [ctxt](https://github.com/ideacrafterslabs/ctxt)
-CLI. Implements `spec/port-knowledgebase.md`: one JSON request on
+KnowledgeBase port adapter backed by the ctxt CLI. Implements `spec/port-knowledgebase.md`: one JSON request on
 stdin, one JSON response on stdout.
 
 ## Verb mapping
