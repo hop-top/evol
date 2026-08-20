@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/hop-top/kit/main/contracts/story-schema.json
+schema_version: "1"
+story_id: evol.errors.unknown-command-corrective
+title: Mistype a verb and get pointed at the real surface
+binary: evol
+intent: |
+  Agents guess verbs. The dangerous failure is a guess that half-works
+  or dies silently, leaving the agent to invent what the CLI meant.
+  Instead an unknown verb fails fast with a non-zero exit, names the
+  rejected token, and points at --help — the corrective loop is one
+  invocation long.
+steps:
+  - id: unknown_verb
+    intent: |
+      Invoke a verb evol does not have and expect a non-zero exit
+      naming the unknown command plus a pointer to --help.
+    invoke: ["evol", "evolve-harder"]
+    capture: [exit_code, stderr]
+  - id: recover_via_help
+    intent: |
+      Follow the pointer and read the real command surface.
+    invoke: ["evol", "--help"]
+    capture: [exit_code, stdout]

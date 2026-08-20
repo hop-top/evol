@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/hop-top/kit/main/contracts/story-schema.json
+schema_version: "1"
+story_id: evol.cases.quarantine-visible
+title: See the gating pool and the quarantine as distinct states
+binary: evol
+intent: |
+  Synthesized eval cases never gate a promotion until a human promotes
+  them — the loop does not grade its own homework. The dangerous
+  failure is invisibility: quarantined intake silently mixed into the
+  gating pool, or hidden so nobody ever reviews it. Instead the pool
+  and the quarantine are separately listable: the default view is
+  exactly what gates, the --quarantined view is exactly what awaits
+  review, and nothing lives in both.
+steps:
+  - id: gating_pool
+    intent: |
+      List the cases that actually gate promotions for the artifact.
+    invoke: ["evol", "cases", "list", "--config", "e2e/evol.yaml", "--artifact", "commit-messages/SKILL.md", "--format", "json"]
+    capture: [exit_code, stdout]
+  - id: quarantined_intake
+    intent: |
+      List only the machine-generated cases awaiting human review —
+      present in this view, absent from the gating pool above.
+    invoke: ["evol", "cases", "list", "--config", "e2e/evol.yaml", "--artifact", "commit-messages/SKILL.md", "--quarantined", "--format", "json"]
+    capture: [exit_code, stdout]

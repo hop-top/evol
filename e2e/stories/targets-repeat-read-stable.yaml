@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/hop-top/kit/main/contracts/story-schema.json
+schema_version: "1"
+story_id: evol.targets.repeat-read-stable
+title: Read the target table twice and get the same answer
+binary: evol
+intent: |
+  An agent deciding what to evolve next reads the targets table: every
+  artifact the store serves, joined with its corpus history. The
+  dangerous failure is a read that mutates or wobbles — rows reordering
+  between invocations, counters ticking on read — because then the
+  agent cannot cache, diff, or reason about the table. Instead targets
+  is a pure read with deterministic ordering: invoking it twice against
+  an unchanged corpus yields byte-identical structured output.
+steps:
+  - id: first_read
+    intent: |
+      Read the full target table as JSON: every artifact plus history.
+    invoke: ["evol", "targets", "--config", "e2e/evol.yaml", "--format", "json"]
+    capture: [exit_code, stdout]
+  - id: second_read
+    intent: |
+      Read it again with no intervening writes and expect the identical
+      document — same rows, same order, same bytes.
+    invoke: ["evol", "targets", "--config", "e2e/evol.yaml", "--format", "json"]
+    capture: [exit_code, stdout]

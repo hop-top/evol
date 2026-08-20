@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/hop-top/kit/main/contracts/story-schema.json
+schema_version: "1"
+story_id: evol.runs.ledger-requires-audit-port
+title: Ask for the run ledger when no audit port is bound
+binary: evol
+intent: |
+  The run ledger is optional: a loop may run unaudited. The dangerous
+  failure is fabrication — answering a ledger query with an empty list
+  when no ledger exists, which an agent would read as "zero runs
+  happened" rather than "nobody is recording". Instead evol refuses
+  loudly with a config-class exit and a corrective message that names
+  both reference adapters and where to bind them, so the agent can fix
+  the config instead of trusting an invented answer.
+steps:
+  - id: ledger_without_audit
+    intent: |
+      Query the run ledger under a config that binds no audit port and
+      expect a corrective refusal, not an empty result.
+    invoke: ["evol", "runs", "list", "--config", "e2e/evol.yaml", "--format", "json"]
+    capture: [exit_code, stderr]

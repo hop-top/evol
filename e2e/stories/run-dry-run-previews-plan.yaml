@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/hop-top/kit/main/contracts/story-schema.json
+schema_version: "1"
+story_id: evol.run.dry-run-previews-plan
+title: Preview the resolved evolution plan before spending anything
+binary: evol
+intent: |
+  An evolution run spends real money and real time: LLM proposals,
+  agent executions, scored trials. The dangerous failure is discovering
+  a misbound adapter or wrong threshold three minutes into a paid run.
+  Instead the agent asks for the plan first: --dry-run resolves the
+  config — every port binding, timeout, threshold, and budget — prints
+  it as a structured document, and exits without spawning a single
+  adapter process. What you preview is exactly what a live run would
+  execute.
+steps:
+  - id: preview_plan
+    intent: |
+      Resolve the example loop config and print the full plan as JSON,
+      spawning no adapters and calling no models.
+    invoke: ["evol", "run", "--config", "e2e/evol.yaml", "--dry-run", "--format", "json"]
+    capture: [exit_code, stdout]
