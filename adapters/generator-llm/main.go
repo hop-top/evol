@@ -1,5 +1,7 @@
 // Command generator-llm implements the evol Generator port with LLM
-// mutation strategies over the Anthropic Messages API.
+// mutation strategies over provider-agnostic LLM clients
+// (hop.top/kit go/ai/llm): Anthropic, OpenAI-compatible endpoints,
+// Ollama and other local servers, and RouteLLM routing.
 //
 // One JSON request on stdin, one JSON response on stdout. Non-zero exit
 // means adapter error; stderr carries diagnostics. See
@@ -74,10 +76,13 @@ type Candidate struct {
 	Body        string `json:"body"`
 	Rationale   string `json:"rationale"`
 	Strategy    string `json:"strategy"`
+	// Provider is the resolved provider URI (secrets stripped).
+	// Optional; consumed by model-comparison work.
+	Provider string `json:"provider,omitempty"`
 }
 
 func main() {
-	os.Exit(run(os.Stdin, os.Stdout, os.Stderr, envConfig()))
+	os.Exit(run(os.Stdin, os.Stdout, os.Stderr, envGetenv))
 }
 
 // diag writes a best-effort diagnostic line; a failed stderr write is
@@ -89,7 +94,7 @@ func diag(w io.Writer, format string, args ...any) {
 // run drives one propose invocation. Exit codes: 0 success (including
 // zero candidates = dry generation), 1 adapter error (bad request,
 // missing configuration, auth failure).
-func run(stdin io.Reader, stdout, stderr io.Writer, cfg config) int {
+func run(stdin io.Reader, stdout, stderr io.Writer, getenv func(string) string) int {
 	raw, err := io.ReadAll(stdin)
 	if err != nil {
 		diag(stderr, "generator-llm: read stdin: %v\n", err)
@@ -106,16 +111,20 @@ func run(stdin io.Reader, stdout, stderr io.Writer, cfg config) int {
 			req.Evol, req.Port, req.Action)
 		return 1
 	}
-	if cfg.apiKey == "" {
-		diag(stderr, "%s\n", "generator-llm: ANTHROPIC_API_KEY is not set")
-		return 1
-	}
 	if req.Budget.MaxCandidates <= 0 {
 		diag(stderr, "%s\n", "generator-llm: budget.max_candidates must be > 0")
 		return 1
 	}
 
-	client := newAnthropicClient(cfg)
+	uri, note := resolveProviderURI(getenv)
+	if note != "" {
+		diag(stderr, "%s\n", note)
+	}
+	client, err := newKitClient(uri)
+	if err != nil {
+		diag(stderr, "generator-llm: provider %q: %v\n", sanitizeURI(uri), err)
+		return 1
+	}
 	candidates := make([]Candidate, 0, req.Budget.MaxCandidates)
 	for i := 0; i < req.Budget.MaxCandidates; i++ {
 		strat := strategies[i%len(strategies)]
@@ -138,6 +147,7 @@ func run(stdin io.Reader, stdout, stderr io.Writer, cfg config) int {
 		}
 		cand.ID = fmt.Sprintf("cand-%02d", len(candidates)+1)
 		cand.Strategy = strat.name
+		cand.Provider = client.providerLabel()
 		candidates = append(candidates, cand)
 	}
 
