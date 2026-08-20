@@ -110,3 +110,103 @@ func TestSelectTargetFallbacksAndErrors(t *testing.T) {
 		t.Errorf("bogus policy error = %v", err)
 	}
 }
+
+func TestComputeTrend(t *testing.T) {
+	cases := []struct {
+		name   string
+		scores []float64
+		want   *float64
+	}{
+		{"short", []float64{0.5}, nil},
+		{"empty", nil, nil},
+		{"two-improving", []float64{0.45, 0.55}, f64(0.10)},
+		{"declining", []float64{0.8, 0.7, 0.6, 0.5}, f64(-0.2)}, // recent [0.7 0.6 0.5]=0.6 vs prior [0.8]
+		{"flat", []float64{0.5, 0.5, 0.5, 0.5}, f64(0)},
+		{"long-decline", []float64{0.9, 0.9, 0.9, 0.6, 0.5, 0.4}, f64(-0.4)}, // recent mean 0.5 vs prior 0.9
+	}
+	for _, tc := range cases {
+		got := computeTrend(tc.scores)
+		switch {
+		case tc.want == nil && got != nil:
+			t.Errorf("%s: trend = %v, want nil", tc.name, *got)
+		case tc.want != nil && got == nil:
+			t.Errorf("%s: trend = nil, want %v", tc.name, *tc.want)
+		case tc.want != nil && got != nil:
+			if diff := *got - *tc.want; diff > 1e-9 || diff < -1e-9 {
+				t.Errorf("%s: trend = %v, want %v", tc.name, *got, *tc.want)
+			}
+		}
+	}
+}
+
+func TestSelectTargetDrift(t *testing.T) {
+	rows := []TargetRow{
+		{Ref: "a", Generations: 3, Trend: f64(-0.05)},
+		{Ref: "b", Generations: 4, Trend: f64(-0.20)},
+		{Ref: "c", Generations: 5, Trend: f64(0.10)},
+		{Ref: "d", Generations: 1, NeverEvolved: false}, // no trend -> ranks last
+	}
+	ref, err := SelectTarget(rows, SelectDrift)
+	if err != nil || ref != "b" {
+		t.Fatalf("drift = %q, %v; want b", ref, err)
+	}
+	// Tie on trend breaks by ref.
+	rows = []TargetRow{
+		{Ref: "z", Trend: f64(-0.1)},
+		{Ref: "a", Trend: f64(-0.1)},
+	}
+	if ref, _ = SelectTarget(rows, SelectDrift); ref != "a" {
+		t.Fatalf("drift tie = %q, want a", ref)
+	}
+	// Nothing has a trend -> never-run fallback.
+	rows = []TargetRow{
+		{Ref: "n", NeverEvolved: true},
+		{Ref: "m", Generations: 1},
+	}
+	if ref, _ = SelectTarget(rows, SelectDrift); ref != "n" {
+		t.Fatalf("drift fallback = %q, want n", ref)
+	}
+}
+
+func TestSelectTargetKBChurn(t *testing.T) {
+	rows := []TargetRow{
+		{Ref: "evolved-lots", Generations: 9},
+		{Ref: "evolved-once", Generations: 1},
+		{Ref: "unknown", NeverEvolved: true, Note: "history unavailable: boom"},
+		{Ref: "virgin", NeverEvolved: true},
+	}
+	if ref, err := SelectTarget(rows, SelectKBChurn); err != nil || ref != "virgin" {
+		t.Fatalf("kb-churn = %q, %v; want virgin", ref, err)
+	}
+	// Clean never-run gone: degraded-unknown wins.
+	if ref, _ := SelectTarget(rows[:3], SelectKBChurn); ref != "unknown" {
+		t.Fatalf("kb-churn degraded = %q, want unknown", ref)
+	}
+	// Only evolved rows: fewest generations.
+	if ref, _ := SelectTarget(rows[:2], SelectKBChurn); ref != "evolved-once" {
+		t.Fatalf("kb-churn evolved = %q, want evolved-once", ref)
+	}
+}
+
+func TestTargetsCarriesScoresAndTrend(t *testing.T) {
+	t.Setenv("EVOL_TEST_DIR", t.TempDir())
+	t.Setenv("EVOL_FAKE_HISTORY", "mixed")
+
+	rows, err := New(fakeConfig(t, false)).Targets(context.Background())
+	if err != nil {
+		t.Fatalf("Targets: %v", err)
+	}
+	fake := rows[0]
+	if fake.Ref != "skills/fake" {
+		t.Fatalf("row order changed: %s", fake.Ref)
+	}
+	if len(fake.Scores) != 2 || fake.Scores[0] != 0.45 || fake.Scores[1] != 0.55 {
+		t.Fatalf("scores = %v, want [0.45 0.55]", fake.Scores)
+	}
+	if fake.Trend == nil || (*fake.Trend-0.10) > 1e-9 || (*fake.Trend-0.10) < -1e-9 {
+		t.Fatalf("trend = %v, want +0.10", fake.Trend)
+	}
+	if rows[1].Trend != nil || rows[1].Scores != nil {
+		t.Fatalf("never-evolved row should carry no scores/trend: %+v", rows[1])
+	}
+}
