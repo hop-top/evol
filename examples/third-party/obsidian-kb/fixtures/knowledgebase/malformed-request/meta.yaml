@@ -1,0 +1,2 @@
+exit: 1
+note: stdout ignored on adapter error
