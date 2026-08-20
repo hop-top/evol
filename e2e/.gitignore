@@ -1,6 +1,7 @@
 # runtime artifacts — never committed
 .corpus/
-cassettes/
+/cassettes/
+# (committed regression fixtures live in e2e/fixtures/cassettes — see RUNBOOK)
 # compiled port binaries (see RUNBOOK build step)
 bin/evol
 bin/fs-artifact
@@ -9,3 +10,4 @@ bin/executor-apx
 bin/corpus-fs
 bin/scorer-eva
 bin/ctxt-kb
+bin/runner-xrr

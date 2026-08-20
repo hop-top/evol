@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: d569eab4
+recorded_at: "2026-08-20T03:43:45Z"
+payload:
+    stdout: |
+        fix(deps): upgrade viper to 1.21.0
+
+        Viper 1.21.0 refactors config loading to use new parser interfaces and improved error handling. Key changes: parser registry replaces direct calls, config bindings now lazy-evaluated, environment variable merging moved earlier in resolution chain.
+    exit_code: 0
+    duration_ms: 6953

@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: d84f8aca
+recorded_at: "2026-08-20T01:17:41Z"
+payload:
+    stdout: |
+        fix(rate-limiter): correct off-by-one in sliding window logic
+
+        Prevented requests exceeding the configured limit by one; the window boundary check was inclusive when it should have been exclusive.
+    exit_code: 0
+    duration_ms: 100187

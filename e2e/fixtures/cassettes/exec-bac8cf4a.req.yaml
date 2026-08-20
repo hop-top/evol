@@ -1,0 +1,10 @@
+xrr: "1"
+adapter: exec
+fingerprint: bac8cf4a
+recorded_at: "2026-08-20T01:54:06Z"
+payload:
+    argv:
+        - claude.sh
+        - candidate:c557416b490e
+        - provider:claude://haiku
+    stdin: fixed off-by-one in the sliding window rate limiter that allowed one extra request

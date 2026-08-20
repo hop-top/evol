@@ -1,0 +1,17 @@
+xrr: "1"
+adapter: exec
+fingerprint: 9e007725
+recorded_at: "2026-08-20T03:46:38Z"
+payload:
+    stdout: |
+        Based on the project's commit style (I can see from the git status output: `fix(adapters): generator output format robust for small models` and `test(e2e): discriminating house-rule eval set + calibration harness`), here's the commit message:
+
+        ```
+        chore(deps): upgrade viper to 1.21.0
+
+        Config loading now uses improved error handling with explicit type assertions for nested structures. Key changes: better memory efficiency in config parsing, stricter validation for environment variable expansion, and enhanced type safety via mapstructure v2.5.0 integration.
+        ```
+
+        The body summarizes the main config-related improvements in viper 1.21.0, matching the telegraphic style of the project (noun phrases, minimal articles, focused on what matters for maintainers).
+    exit_code: 0
+    duration_ms: 21180

@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: ed43a793
+recorded_at: "2026-08-20T01:58:51Z"
+payload:
+    stdout: |
+        fix(config): remove deprecated v1 loader and migration shims
+
+        Breaking change: v1 config format no longer supported. Users must migrate to v2 format before upgrading.
+    exit_code: 0
+    duration_ms: 10176

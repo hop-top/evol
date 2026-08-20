@@ -1,0 +1,22 @@
+xrr: "1"
+adapter: exec
+fingerprint: 89f30e2c
+recorded_at: "2026-08-20T03:42:38Z"
+payload:
+    stdout: |
+        Based on the skill guidance you have loaded, here's the commit message:
+
+        ```
+        refactor!: remove deprecated LegacyAuth interface
+
+        Use NewAuth instead. LegacyAuth provided compatibility during the
+        migration to the new auth system and is no longer needed.
+        ```
+
+        This follows Conventional Commits with:
+        - **Type**: `refactor` (removing/restructuring code)
+        - **Breaking change marker**: `!` (indicates breaking change per the spec)
+        - **Subject**: Concise description of what changed
+        - **Body**: Notes the replacement (NewAuth) and briefly explains the reason for removal
+    exit_code: 0
+    duration_ms: 10280

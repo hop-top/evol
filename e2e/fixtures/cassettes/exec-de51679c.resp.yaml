@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: de51679c
+recorded_at: "2026-08-20T03:49:34Z"
+payload:
+    stdout: |
+        fix(http): add exponential backoff to retryTransport
+
+        Implements exponential backoff with jitter in retryTransport and integrates it into the http client component for more resilient request handling under transient failures.
+    exit_code: 0
+    duration_ms: 11485

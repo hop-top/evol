@@ -1,0 +1,11 @@
+xrr: "1"
+adapter: exec
+fingerprint: a042324c
+recorded_at: "2026-08-20T01:27:13Z"
+payload:
+    stdout: |
+        fix: remove deprecated v1 config loader and migration shims
+
+        BREAKING CHANGE: v1 config loader and related migration utilities have been removed. Applications must migrate to v2 config format before upgrading.
+    exit_code: 0
+    duration_ms: 89572
