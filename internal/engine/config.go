@@ -14,13 +14,17 @@ type PortConfig struct {
 	Cmd []string `mapstructure:"cmd" json:"cmd"`
 	// TimeoutSeconds bounds each call; 0 uses the port default.
 	TimeoutSeconds int `mapstructure:"timeout_seconds" json:"timeout_seconds,omitempty"`
+	// Env is adapter environment provided by config; a variable set in
+	// the engine's process environment overrides the same key here.
+	Env map[string]string `mapstructure:"env" json:"env,omitempty"`
 }
 
-func (p PortConfig) client(name string) *port.Client {
+func (p PortConfig) Client(name string) *port.Client {
 	return &port.Client{
 		Port:    name,
 		Cmd:     p.Cmd,
 		Timeout: time.Duration(p.TimeoutSeconds) * time.Second,
+		Env:     p.Env,
 	}
 }
 
@@ -35,8 +39,7 @@ type Config struct {
 		Generator     PortConfig `mapstructure:"generator" json:"generator"`
 		Executor      PortConfig `mapstructure:"executor" json:"executor"`
 		Corpus        PortConfig `mapstructure:"corpus" json:"corpus"`
-		// Scorer is an engine-level draft contract; see
-		// docs/scorer-draft.md.
+		// Scorer scores transcripts against cases (spec/port-scorer.md).
 		Scorer PortConfig `mapstructure:"scorer" json:"scorer"`
 		// KnowledgeBase is optional; leave cmd empty to disable.
 		KnowledgeBase PortConfig `mapstructure:"knowledgebase" json:"knowledgebase"`

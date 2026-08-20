@@ -61,14 +61,14 @@ type Engine struct {
 func New(cfg Config) *Engine {
 	return &Engine{
 		cfg:       cfg,
-		store:     cfg.Ports.ArtifactStore.client("artifactstore"),
-		generator: cfg.Ports.Generator.client("generator"),
-		executor:  cfg.Ports.Executor.client("executor"),
-		corpus:    cfg.Ports.Corpus.client("corpus"),
-		scorer:    cfg.Ports.Scorer.client("scorer"),
-		kb:        cfg.Ports.KnowledgeBase.client("knowledgebase"),
-		casegen:   cfg.Ports.CaseGen.client("generator"),
-		audit:     cfg.Ports.Audit.client("audit"),
+		store:     cfg.Ports.ArtifactStore.Client("artifactstore"),
+		generator: cfg.Ports.Generator.Client("generator"),
+		executor:  cfg.Ports.Executor.Client("executor"),
+		corpus:    cfg.Ports.Corpus.Client("corpus"),
+		scorer:    cfg.Ports.Scorer.Client("scorer"),
+		kb:        cfg.Ports.KnowledgeBase.Client("knowledgebase"),
+		casegen:   cfg.Ports.CaseGen.Client("generator"),
+		audit:     cfg.Ports.Audit.Client("audit"),
 		Log:       io.Discard,
 		Now:       time.Now,
 	}

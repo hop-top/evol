@@ -11,7 +11,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
+	"sort"
 	"strings"
 	"time"
 )
@@ -31,6 +33,11 @@ type Client struct {
 	Cmd []string
 	// Timeout bounds each Call. Zero means DefaultTimeout.
 	Timeout time.Duration
+	// Env is config-provided environment for the adapter process,
+	// merged under the caller's environment: a variable set in the
+	// process environment overrides the same key here. Empty means
+	// plain inheritance.
+	Env map[string]string
 }
 
 // Configured reports whether the client has an adapter command bound.
@@ -69,6 +76,21 @@ func (c *Client) Call(ctx context.Context, action string, params map[string]any,
 	// Adapter argv comes from operator-owned configuration; spawning
 	// it is the whole point of the port layer.
 	cmd := exec.CommandContext(ctx, c.Cmd[0], c.Cmd[1:]...) // #nosec G204
+	if len(c.Env) > 0 {
+		// Config pairs first, process environment after: os/exec keeps
+		// the last value for a duplicated key, so the real environment
+		// overrides config.
+		keys := make([]string, 0, len(c.Env))
+		for k := range c.Env {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		env := make([]string, 0, len(keys)+len(os.Environ()))
+		for _, k := range keys {
+			env = append(env, k+"="+c.Env[k])
+		}
+		cmd.Env = append(env, os.Environ()...)
+	}
 	cmd.Stdin = bytes.NewReader(payload)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout

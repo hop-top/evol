@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
 	"hop.top/evol/internal/port"
@@ -89,11 +88,7 @@ func corpusClient(cmd *cobra.Command) (*port.Client, string, error) {
 		return nil, "", &codedError{code: exitConfigError,
 			err: errors.New("an artifact ref is required (--artifact or config)")}
 	}
-	client := &port.Client{
-		Port:    "corpus",
-		Cmd:     cfg.Ports.Corpus.Cmd,
-		Timeout: time.Duration(cfg.Ports.Corpus.TimeoutSeconds) * time.Second,
-	}
+	client := cfg.Ports.Corpus.Client("corpus")
 	if !client.Configured() {
 		return nil, "", &codedError{code: exitConfigError,
 			err: errors.New("no corpus port configured (ports.corpus.cmd)")}

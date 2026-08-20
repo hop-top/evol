@@ -2,10 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/spf13/cobra"
-	"hop.top/evol/internal/port"
 )
 
 var rollbackCmd = &cobra.Command{
@@ -60,11 +58,7 @@ func runRollback(cmd *cobra.Command, _ []string) error {
 	if len(cfg.Ports.ArtifactStore.Cmd) == 0 {
 		return fail(fmt.Errorf("config: ports.artifactstore.cmd is required"))
 	}
-	store := &port.Client{
-		Port:    "artifactstore",
-		Cmd:     cfg.Ports.ArtifactStore.Cmd,
-		Timeout: time.Duration(cfg.Ports.ArtifactStore.TimeoutSeconds) * time.Second,
-	}
+	store := cfg.Ports.ArtifactStore.Client("artifactstore")
 
 	var versionsResp struct {
 		Versions []struct {

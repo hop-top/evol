@@ -41,6 +41,58 @@ func TestCallRoundTrip(t *testing.T) {
 	}
 }
 
+func TestCallConfigEnv(t *testing.T) {
+	c := &Client{
+		Port: "echo",
+		Cmd:  []string{"sh", script(t, "env.sh")},
+		Env:  map[string]string{"EVOL_TEST_VALUE": "from-config"},
+	}
+	var resp struct {
+		Value string `json:"value"`
+	}
+	if err := c.Call(context.Background(), "env", nil, &resp); err != nil {
+		t.Fatalf("Call: %v", err)
+	}
+	if resp.Value != "from-config" {
+		t.Errorf("value = %q, want %q (config env must reach the adapter)",
+			resp.Value, "from-config")
+	}
+}
+
+func TestCallProcessEnvOverridesConfig(t *testing.T) {
+	t.Setenv("EVOL_TEST_VALUE", "from-process")
+	c := &Client{
+		Port: "echo",
+		Cmd:  []string{"sh", script(t, "env.sh")},
+		Env:  map[string]string{"EVOL_TEST_VALUE": "from-config"},
+	}
+	var resp struct {
+		Value string `json:"value"`
+	}
+	if err := c.Call(context.Background(), "env", nil, &resp); err != nil {
+		t.Fatalf("Call: %v", err)
+	}
+	if resp.Value != "from-process" {
+		t.Errorf("value = %q, want %q (process env must override config env)",
+			resp.Value, "from-process")
+	}
+}
+
+func TestCallInheritsEnvWithoutConfig(t *testing.T) {
+	t.Setenv("EVOL_TEST_VALUE", "inherited")
+	c := &Client{Port: "echo", Cmd: []string{"sh", script(t, "env.sh")}}
+	var resp struct {
+		Value string `json:"value"`
+	}
+	if err := c.Call(context.Background(), "env", nil, &resp); err != nil {
+		t.Fatalf("Call: %v", err)
+	}
+	if resp.Value != "inherited" {
+		t.Errorf("value = %q, want %q (no config env keeps plain inheritance)",
+			resp.Value, "inherited")
+	}
+}
+
 func TestCallAdapterFailure(t *testing.T) {
 	c := &Client{Port: "boom", Cmd: []string{"sh", script(t, "fail.sh")}}
 	err := c.Call(context.Background(), "x", nil, &struct{}{})
