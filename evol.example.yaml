@@ -4,7 +4,8 @@
 # cmd is an argv array; the engine appends nothing — flags belong here.
 
 # Default artifact to evolve; `evol run --artifact <ref>` overrides.
-# Omit entirely to let `evol run --select never-run|worst|stale` pick a
+# Omit entirely to let `evol run --select never-run|worst|stale|drift|kb-churn`
+# pick a
 # target from the store's artifacts and their corpus history.
 artifact: skills/commit-style
 
@@ -71,3 +72,8 @@ executor_mode: replay
 # root). When set, the promoted candidate's corpus record carries it as
 # fixtures.cassette_dir for regression replay.
 # fixtures_dir: .evol/cassettes
+
+# Self-scheduling: run the loop on a schedule and let a policy pick the
+# target from recorded evidence (docs/self-scheduling.md):
+#   evol run --config evol.yaml --select drift      # chase score decline
+#   evol run --config evol.yaml --select kb-churn   # spread attention

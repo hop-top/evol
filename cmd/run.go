@@ -55,7 +55,7 @@ func init() {
 	runCmd.Flags().String("config", "evol.yaml", "Loop configuration file")
 	runCmd.Flags().String("artifact", "", "Artifact ref to evolve (overrides config)")
 	runCmd.Flags().String("select", engine.SelectNeverRun,
-		"Target selection policy when no artifact is given (never-run|worst|stale)")
+		"Target selection policy when no artifact is given (never-run|worst|stale|drift|kb-churn)")
 	runCmd.Flags().Bool("dry-run", false, "Print the resolved plan without spawning adapters")
 	rootCmd.AddCommand(runCmd)
 }
