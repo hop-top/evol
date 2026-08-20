@@ -11,9 +11,12 @@ and scores them, gates the results against a baseline, and promotes or
 rejects. Every verdict, accepted and rejected alike, is written back to
 a corpus so the next generation starts smarter.
 
-> **Status: pre-alpha.** The port contracts in [spec/](spec/) are
-> INTERNAL DRAFT — unstable until a first end-to-end improvement is
-> demonstrated. Nothing here is a stable interface yet.
+> **Status: pre-alpha code, published spec.** The port contracts in
+> [spec/](spec/) are published (`evol: "1"`, additive-only evolution —
+> the commitment is in [spec/publishing.md](spec/publishing.md)), after
+> the reference loop demonstrated a verified end-to-end improvement on
+> a real skill (evidence in [e2e/runs/](e2e/runs/)). The CLI and
+> reference adapters remain pre-alpha: flags and layouts may change.
 
 ## How it works
 
