@@ -134,7 +134,7 @@ func runCasesList(cmd *cobra.Command, _ []string) error {
 		cases = kept
 	}
 
-	if format == "json" {
+	if format != formatText {
 		return emit(cmd, format, map[string]any{
 			"artifact_ref": artifact,
 			"cases":        cases,

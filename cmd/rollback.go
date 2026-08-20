@@ -93,7 +93,7 @@ func runRollback(cmd *cobra.Command, _ []string) error {
 	}
 
 	res := rollbackResult{ArtifactRef: ref, RestoredTo: restoreResp.Version, GitCommit: restoreResp.GitCommit}
-	if format == "json" {
+	if format != formatText {
 		return emit(cmd, format, res)
 	}
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "rolled back %s to %s", res.ArtifactRef, res.RestoredTo)

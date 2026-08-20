@@ -76,7 +76,7 @@ func runRunsList(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return auditFail(cmd, err)
 	}
-	if format == "json" {
+	if format != formatText {
 		return emit(cmd, format, runs)
 	}
 	printRuns(cmd, runs)
@@ -94,7 +94,7 @@ func runRunsShow(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return auditFail(cmd, err)
 	}
-	if format == "json" {
+	if format != formatText {
 		return emit(cmd, format, run)
 	}
 	printRun(cmd, run)

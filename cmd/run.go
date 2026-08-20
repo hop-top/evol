@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"hop.top/evol/internal/engine"
+	"hop.top/kit/go/console/output"
 	kitconfig "hop.top/kit/go/core/config"
 )
 
@@ -143,12 +144,16 @@ func runRun(cmd *cobra.Command, _ []string) error {
 	}
 }
 
+// emit renders payload in the requested format. Structured formats go
+// through kit's output registry; text falls back to the bespoke human
+// renderers (or indented JSON for payloads without one). The format
+// itself is validated once, in validateFormat, before any verb runs.
 func emit(cmd *cobra.Command, format string, payload any) error {
 	switch format {
-	case "json":
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(payload)
+	case formatJSON:
+		return output.Render(cmd.OutOrStdout(), output.JSON, payload)
+	case formatYAML:
+		return emitYAML(cmd, payload)
 	default:
 		if res, ok := payload.(*engine.Result); ok {
 			printResult(cmd, res)
@@ -161,6 +166,22 @@ func emit(cmd *cobra.Command, format string, payload any) error {
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(data))
 		return nil
 	}
+}
+
+// emitYAML re-encodes payload through its JSON form before rendering so
+// YAML carries exactly the key names the JSON contract declares (json
+// struct tags, omitempty included) — encoding structs directly would
+// smash-lowercase field names instead.
+func emitYAML(cmd *cobra.Command, payload any) error {
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	var v any
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+	return output.Render(cmd.OutOrStdout(), output.YAML, v)
 }
 
 func printResult(cmd *cobra.Command, res *engine.Result) {

@@ -97,7 +97,7 @@ func runRoutingEmit(cmd *cobra.Command, _ []string) error {
 	}
 
 	format, _ := cmd.Flags().GetString("format")
-	if format == "json" {
+	if format != formatText {
 		return emit(cmd, format, resp)
 	}
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "pool written: %s (%d entries)\n", resp.Written, len(resp.Entries))

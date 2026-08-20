@@ -58,7 +58,7 @@ func runTargets(cmd *cobra.Command, _ []string) error {
 		return fail(err)
 	}
 
-	if format == "json" {
+	if format != formatText {
 		return emit(cmd, format, rows)
 	}
 	printTargets(cmd, rows)
