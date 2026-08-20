@@ -1,0 +1,11 @@
+# runtime artifacts — never committed
+.corpus/
+cassettes/
+# compiled port binaries (see RUNBOOK build step)
+bin/evol
+bin/fs-artifact
+bin/generator-llm
+bin/executor-apx
+bin/corpus-fs
+bin/scorer-eva
+bin/ctxt-kb

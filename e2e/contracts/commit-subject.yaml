@@ -1,0 +1,21 @@
+# Gen-1 e2e contract: gates a generated Conventional Commit message.
+# Programmatic evaluators only — no LLM judges (standalone-mode limit).
+name: commit-subject-0.1
+provider: commit-message-writer
+evaluators:
+  # Subject line: type(scope)?: lowercase start.
+  - name: regex
+    mode: binary
+    pattern: '^(feat|fix|refactor|build|ci|chore|docs|style|perf|test)(\([a-z0-9-]+\))?!?: [a-z]'
+  # No trailing period on the subject line.
+  - name: regex
+    mode: binary
+    pattern: '^[^\n]*[^.\n]($|\n)'
+  # Whole message stays note-like, not an essay.
+  - name: word_count
+    mode: binary
+    max: 120
+  # Never attribute tooling or assistants.
+  - name: forbidden_phrases
+    mode: binary
+    banlist: ["generated", "co-authored", "ai", "assistant", "claude"]

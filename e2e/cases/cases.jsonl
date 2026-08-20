@@ -1,0 +1,12 @@
+{"id":"c01","input":"added retry with exponential backoff to the fetch client in the http module","split":"train"}
+{"id":"c02","input":"fixed nil pointer dereference when the config file is missing at startup","split":"train"}
+{"id":"c03","input":"renamed module storage to store, updating all import paths (breaking change)","split":"train"}
+{"id":"c04","input":"bumped golangci-lint from 2.8.0 to 2.12.2 in CI","split":"train"}
+{"id":"c05","input":"documented the cassette format matching rules in the spec directory","split":"train"}
+{"id":"c06","input":"extracted duplicated pagination logic from three handlers into a shared helper","split":"train"}
+{"id":"c07","input":"sped up the indexer by batching writes, roughly 4x fewer fsync calls","split":"train"}
+{"id":"c08","input":"added table-driven tests covering the timeout and cancellation paths of the runner","split":"train"}
+{"id":"c09","input":"fixed off-by-one in the sliding window rate limiter that allowed one extra request","split":"holdout"}
+{"id":"c10","input":"added a --format json flag to the list command","split":"holdout"}
+{"id":"c11","input":"removed the deprecated v1 config loader and its migration shims (breaking change)","split":"holdout"}
+{"id":"c12","input":"reordered dockerfile layers so dependency downloads cache across builds","split":"holdout"}

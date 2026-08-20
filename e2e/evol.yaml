@@ -1,0 +1,37 @@
+# Gen-1 e2e: evolve the commit-messages skill.
+# Run from the repo root. Build binaries + export env per e2e/RUNBOOK.md.
+artifact: commit-messages/SKILL.md
+
+ports:
+  artifactstore:
+    cmd: [e2e/bin/fs-artifact]
+    timeout_seconds: 30
+  generator:
+    cmd: [e2e/bin/generator-llm]
+    timeout_seconds: 300
+  executor:
+    cmd: [e2e/bin/executor-apx]
+    timeout_seconds: 600
+  corpus:
+    cmd: [e2e/bin/corpus-fs]
+    timeout_seconds: 30
+  # Fallback scorer (stdlib python; mirrors e2e/contracts/commit-subject.yaml).
+  # Swap to [e2e/bin/scorer-eva] once an eva build with standalone contract
+  # mode is installed — see RUNBOOK "Scorer note".
+  scorer:
+    cmd: [e2e/bin/score-commit.py]
+    timeout_seconds: 60
+  # knowledgebase deliberately disabled for gen-1 (optional port).
+
+thresholds:
+  delta: 0.05
+  trials: 2
+
+budget:
+  generations: 3
+  max_candidates: 3
+
+holdout: holdout
+# Plain-subprocess executor layer: no frozen environment in gen-1.
+executor_mode: live
+# fixtures_dir: e2e/cassettes   # enable with the +xrr layer
