@@ -45,6 +45,12 @@ holdout: holdout
 # env.mode hint sent to the executor: replay | record | live.
 executor_mode: replay
 
+# Optional: model/provider URI forwarded as env.provider on every executor
+# run. The run wrapper interprets it — e.g. claude://haiku selects the model
+# for a claude-CLI wrapper; ollama://llama3.2:3b?base_url=http://127.0.0.1:11434
+# targets a local Ollama server.
+# executor_provider: claude://haiku
+
 # Optional: recorded-environment location (e.g. the executor's cassette
 # root). When set, the promoted candidate's corpus record carries it as
 # fixtures.cassette_dir for regression replay.

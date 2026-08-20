@@ -35,3 +35,11 @@ holdout: holdout
 # Plain-subprocess executor layer: no frozen environment in gen-1.
 executor_mode: live
 # fixtures_dir: e2e/cassettes   # enable with the +xrr layer
+
+# Model under test — forwarded to the runner shim as EVOL_PROVIDER
+# (reference runner contract, spec/port-executor.md). Default shim is
+# e2e/bin/runners/claude.sh; swap shims via EVOL_EXEC_CMD and pick the
+# matching scheme here (see RUNBOOK "Runner selection" for the full
+# shim × status table).
+executor_provider: claude://haiku
+# executor_provider: ollama://llama3.2:3b?base_url=http://127.0.0.1:11500  # with runners/ollama.sh

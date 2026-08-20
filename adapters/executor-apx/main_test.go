@@ -210,6 +210,66 @@ printf '[exit] 0\n'`, argvLog))
 	}
 }
 
+func TestProviderPassthrough(t *testing.T) {
+	child := script(t, "child.sh", `printf 'P=%s C=%s' "$EVOL_PROVIDER" "$EVOL_CANDIDATE_REF"`)
+
+	// Plain layer: env.provider + candidate ref reach the child verbatim.
+	req := baseRequest()
+	req["env"] = map[string]any{"provider": "ollama://llama3.2:3b?base_url=http://127.0.0.1:11500"}
+	code, resp, stderr := runAdapter(t, req, map[string]string{
+		"EVOL_EXEC_CMD": argvJSON(t, child),
+	})
+	if code != 0 {
+		t.Fatalf("adapter exit %d, stderr: %s", code, stderr)
+	}
+	if want := "P=ollama://llama3.2:3b?base_url=http://127.0.0.1:11500 C=staging/cand-01"; resp.Transcript.Output != want {
+		t.Errorf("child env = %q, want %q", resp.Transcript.Output, want)
+	}
+
+	// Absent provider: child still gets the candidate ref, provider unset.
+	code, resp, stderr = runAdapter(t, baseRequest(), map[string]string{
+		"EVOL_EXEC_CMD": argvJSON(t, child),
+	})
+	if code != 0 {
+		t.Fatalf("adapter exit %d, stderr: %s", code, stderr)
+	}
+	if resp.Transcript.Output != "P= C=staging/cand-01" {
+		t.Errorf("child env mismatch, got %q", resp.Transcript.Output)
+	}
+
+	// aps layer: provider must ride as an --env flag before the -- separator.
+	argvLog := filepath.Join(t.TempDir(), "aps-argv")
+	aps := script(t, "aps", fmt.Sprintf(`printf '%%s\n' "$@" > %q`, argvLog))
+	req = baseRequest()
+	req["env"] = map[string]any{"provider": "claude://haiku"}
+	code, _, stderr = runAdapter(t, req, map[string]string{
+		"EVOL_EXEC_CMD":    argvJSON(t, child),
+		"EVOL_APS_PROFILE": "cand0",
+		"EVOL_APS_BIN":     aps,
+	})
+	if code != 0 {
+		t.Fatalf("adapter exit %d, stderr: %s", code, stderr)
+	}
+	rawArgv, err := os.ReadFile(argvLog) //nolint:gosec // test-owned path
+	if err != nil {
+		t.Fatalf("fake aps did not record argv: %v", err)
+	}
+	got := strings.Fields(string(rawArgv))
+	sep := -1
+	for i, a := range got {
+		if a == "--" {
+			sep = i
+			break
+		}
+	}
+	if sep == -1 {
+		t.Fatalf("no -- separator in aps argv: %v", got)
+	}
+	if pre := strings.Join(got[:sep], " "); !strings.Contains(pre, "--env EVOL_PROVIDER=claude://haiku") {
+		t.Errorf("provider --env flag must precede --: %v", got)
+	}
+}
+
 func TestTimeoutIsRunFailure(t *testing.T) {
 	child := script(t, "slow.sh", `sleep 5`)
 	start := time.Now()

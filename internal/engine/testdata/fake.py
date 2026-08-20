@@ -18,7 +18,8 @@ port, action = req["port"], req["action"]
 out_dir = os.environ.get("EVOL_TEST_DIR", ".")
 
 with open(os.path.join(out_dir, "calls.jsonl"), "a", encoding="utf-8") as f:
-    f.write(json.dumps({"port": port, "action": action}) + "\n")
+    f.write(json.dumps({"port": port, "action": action,
+                        "env": req.get("env")}) + "\n")
 
 
 def reply(payload):

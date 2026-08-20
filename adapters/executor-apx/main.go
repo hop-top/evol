@@ -39,6 +39,10 @@ type request struct {
 	} `json:"case"`
 	Env struct {
 		Mode string `json:"mode"`
+		// Provider is an optional model/provider URI for the agent under
+		// test; exposed to the child verbatim as EVOL_PROVIDER. The wrapper
+		// owns interpretation (spec/port-executor.md).
+		Provider string `json:"provider"`
 	} `json:"env"`
 }
 
@@ -89,6 +93,13 @@ func realMain(stdin io.Reader, stdout, stderr io.Writer, getenv env) int {
 		warnf(stderr, "executor-apx: %v\n", xrrErr)
 		return 1
 	}
+	if req.Env.Provider != "" {
+		childEnv = append(childEnv, "EVOL_PROVIDER="+req.Env.Provider)
+	}
+	// Reference runner contract (spec/port-executor.md): the child learns
+	// the staged candidate location from the environment; argv placeholder
+	// substitution remains supported for non-conforming commands.
+	childEnv = append(childEnv, "EVOL_CANDIDATE_REF="+req.CandidateRef)
 
 	if profile := getenv("EVOL_APS_PROFILE"); profile != "" {
 		argv = apsWrap(getenv, profile, childEnv, argv)
