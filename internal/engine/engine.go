@@ -242,10 +242,14 @@ func (e *Engine) evaluate(ctx context.Context, staging, id, frontmatter, body st
 				Transcript Transcript `json:"transcript"`
 				Error      string     `json:"error"`
 			}
+			execEnv := map[string]any{"mode": e.cfg.ExecutorMode}
+			if e.cfg.ExecutorProvider != "" {
+				execEnv["provider"] = e.cfg.ExecutorProvider
+			}
 			if err := e.executor.Call(ctx, "run", map[string]any{
 				"candidate_ref": ref,
 				"case":          map[string]any{"id": cs.ID, "input": cs.Input},
-				"env":           map[string]any{"mode": e.cfg.ExecutorMode},
+				"env":           execEnv,
 			}, &runResp); err != nil {
 				return nil, err
 			}

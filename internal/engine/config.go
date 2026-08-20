@@ -64,6 +64,12 @@ type Config struct {
 	// replay, record, or live. Defaults to "replay".
 	ExecutorMode string `mapstructure:"executor_mode" json:"executor_mode"`
 
+	// ExecutorProvider, when set, is forwarded as env.provider on every
+	// Executor run — a model/provider URI for the agent under test
+	// (e.g. claude://haiku, ollama://llama3.2:3b?base_url=…). Optional;
+	// interpretation belongs to the executor's run wrapper.
+	ExecutorProvider string `mapstructure:"executor_provider" json:"executor_provider,omitempty"`
+
 	// FixturesDir, when set, is recorded with the promoted candidate's
 	// corpus entry as fixtures.cassette_dir — the operator-configured
 	// location of the recorded environment (adapter-agnostic; the

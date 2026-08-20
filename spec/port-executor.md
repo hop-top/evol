@@ -27,6 +27,7 @@ Request:
 | `case.id` | string | eval case id, from [Corpus](port-corpus.md) `cases` |
 | `case.input` | string | the task input to run |
 | `env.mode` | string | execution mode hint: `replay` (frozen environment), `record` (capture a fresh environment), `live` (no freezing) — adapters implement the subset they support |
+| `env.provider` | string | optional model/provider URI for the agent under test (e.g. `claude://haiku`, `ollama://llama3.2:3b?base_url=http://127.0.0.1:11500`). Executors MUST expose it to the child verbatim (reference implementation: env var `EVOL_PROVIDER`); interpretation belongs to the run wrapper. *Added while INTERNAL DRAFT.* |
 
 Response:
 
@@ -67,6 +68,25 @@ Distinguish two failure planes:
   `error` set. The engine scores the case as failed and continues; the
   failure is data, recorded to the [Corpus](port-corpus.md) like any
   other verdict.
+
+## Reference runner contract
+
+*INTERNAL DRAFT.* Executors that spawn a command to run the agent under
+test SHOULD spawn one conforming to this contract, making the agent
+runner a user-swappable seam with the same philosophy as the ports —
+no tool is privileged:
+
+| Channel | Meaning |
+|---------|---------|
+| stdin | the case input, verbatim |
+| env `EVOL_CANDIDATE_REF` | path to the staged candidate artifact body |
+| env `EVOL_PROVIDER` | optional provider/model URI; interpretation is the runner's — a runner handed a scheme it does not speak fails fast rather than running the wrong model |
+| stdout | the agent's output ONLY — no banners, logs, or wrappers |
+| non-zero exit | run failure (becomes `error`, scored as failed) |
+
+The reference executor exposes `EVOL_CANDIDATE_REF` and
+`EVOL_PROVIDER` on every child. Per-tool shims adapting this contract
+to concrete CLIs live with the consuming project (e.g. `e2e/bin/runners/`).
 
 ## Notes
 

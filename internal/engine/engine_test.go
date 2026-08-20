@@ -268,3 +268,61 @@ func TestStageReassemblesFrontmatter(t *testing.T) {
 		t.Errorf("staged doc = %q, want %q", data, want)
 	}
 }
+
+func executorEnvs(t *testing.T, dir string) []map[string]any {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(dir, "calls.jsonl")) // #nosec G304 -- test temp dir
+	if err != nil {
+		t.Fatalf("fake adapter recorded no calls: %v", err)
+	}
+	var envs []map[string]any
+	for _, line := range strings.Split(strings.TrimSpace(string(data)), "\n") {
+		var call struct {
+			Port   string         `json:"port"`
+			Action string         `json:"action"`
+			Env    map[string]any `json:"env"`
+		}
+		if err := json.Unmarshal([]byte(line), &call); err != nil {
+			t.Fatalf("bad call line %q: %v", line, err)
+		}
+		if call.Port == "executor" && call.Action == "run" {
+			envs = append(envs, call.Env)
+		}
+	}
+	if len(envs) == 0 {
+		t.Fatal("no executor runs observed")
+	}
+	return envs
+}
+
+func TestExecutorProviderForwarded(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("EVOL_TEST_DIR", dir)
+	t.Setenv("EVOL_FAKE_GOOD", "1")
+
+	cfg := fakeConfig(t, false)
+	cfg.ExecutorProvider = "ollama://llama3.2:3b?base_url=http://127.0.0.1:11500"
+	if _, err := New(cfg).Run(context.Background(), "skills/fake"); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	for _, env := range executorEnvs(t, dir) {
+		if got, _ := env["provider"].(string); got != cfg.ExecutorProvider {
+			t.Errorf("executor env.provider = %q, want %q", got, cfg.ExecutorProvider)
+		}
+	}
+}
+
+func TestExecutorProviderOmittedByDefault(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("EVOL_TEST_DIR", dir)
+	t.Setenv("EVOL_FAKE_GOOD", "1")
+
+	if _, err := New(fakeConfig(t, false)).Run(context.Background(), "skills/fake"); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	for _, env := range executorEnvs(t, dir) {
+		if _, present := env["provider"]; present {
+			t.Errorf("executor env should omit provider when unconfigured, got %v", env)
+		}
+	}
+}
