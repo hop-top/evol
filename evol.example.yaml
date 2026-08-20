@@ -2,11 +2,12 @@
 #
 # Every port is an external executable spoken to over stdio (see spec/).
 # cmd is an argv array; the engine appends nothing — flags belong here.
+# env is an optional per-port map of adapter settings; a variable set
+# in the engine's process environment overrides the same key here.
 
 # Default artifact to evolve; `evol run --artifact <ref>` overrides.
 # Omit entirely to let `evol run --select never-run|worst|stale|drift|kb-churn`
-# pick a
-# target from the store's artifacts and their corpus history.
+# pick a target from the store's artifacts and their corpus history.
 artifact: skills/commit-style
 
 ports:
@@ -22,12 +23,14 @@ ports:
   corpus:
     cmd: [evol-adapter-corpus-fs]
     timeout_seconds: 30
-  # Engine-level draft contract until a Scorer port is extracted —
-  # see docs/scorer-draft.md.
+    # Adapter settings may live in config instead of exported env;
+    # the process environment wins on key collision.
+    # env:
+    #   EVOL_CORPUS_ROOT: .evol/corpus
+  # Scores transcripts against cases (spec/port-scorer.md).
   scorer:
     cmd: [evol-adapter-scorer-eva]
     timeout_seconds: 120
-  # Optional: leave cmd out (or empty) to run without a knowledge base.
   # casegen (optional): the generator-port `synth` action for grounded
   # synthetic case generation (`evol cases synth`). Cases always land
   # quarantined; promote after review.
@@ -35,6 +38,7 @@ ports:
   #   cmd: ["evol-adapter-casegen-llm"]
   #   timeout_seconds: 300
 
+  # Optional: leave cmd out (or empty) to run without a knowledge base.
   knowledgebase:
     cmd: [evol-adapter-kb-ctxt]
     timeout_seconds: 30
@@ -66,7 +70,8 @@ budget:
 # Corpus split used for gating.
 holdout: holdout
 
-# env.mode hint sent to the executor: replay | record | live.
+# Sent to the executor as the wire-level env.mode hint:
+# replay | record | live.
 executor_mode: replay
 
 # Optional: model/provider URI forwarded as env.provider on every executor

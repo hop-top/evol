@@ -37,7 +37,10 @@ export ANTHROPIC_API_KEY=...             # Messages API
 # export EVOL_GENERATOR_PROVIDER='ollama://<model>?base_url=http://localhost:11434'
 ```
 
-The engine passes its environment through to every adapter.
+The engine passes its environment through to every adapter. Any of
+these exports can live in config instead: each `ports.<name>` block
+takes an `env:` map, and a variable exported in the process environment
+overrides the same key from config.
 
 ## 4. Verify wiring (no LLM calls)
 
