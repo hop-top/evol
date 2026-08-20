@@ -74,11 +74,15 @@ type CaseScore struct {
 	Reason string  `json:"reason,omitempty"`
 }
 
-// Verdict values recorded per candidate.
+// Verdict values recorded per candidate. VerdictEvidence marks
+// provider-sweep rows: scored under a non-primary provider (or the
+// baseline under any provider), recorded for routing evidence and never
+// gated on.
 const (
 	VerdictAccepted = "accepted"
 	VerdictRejected = "rejected"
 	VerdictFailed   = "failed"
+	VerdictEvidence = "evidence"
 )
 
 // Fixtures pins the recorded environment behind a promoted run so it
@@ -94,7 +98,10 @@ type CandidateOutcome struct {
 	Scores    []CaseScore `json:"scores"`
 	Verdict   string      `json:"verdict"`
 	Rationale string      `json:"rationale"`
-	Fixtures  *Fixtures   `json:"fixtures,omitempty"`
+	// Provider is the executor provider URI these scores were produced
+	// under; set whenever one is configured (sweep rows always carry it).
+	Provider string    `json:"provider,omitempty"`
+	Fixtures *Fixtures `json:"fixtures,omitempty"`
 }
 
 // Result is the outcome of one engine run.
@@ -108,4 +115,7 @@ type Result struct {
 	BestScore       float64 `json:"best_score"`
 	Generations     int     `json:"generations"`
 	CandidatesTried int     `json:"candidates_tried"`
+	// SigP is the accepted candidate's paired-bootstrap p-value, when
+	// significance testing ran (nil when disabled by the pair floor).
+	SigP *float64 `json:"sig_p,omitempty"`
 }

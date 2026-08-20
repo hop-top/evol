@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"hop.top/evol/internal/port"
@@ -47,6 +48,15 @@ type Config struct {
 		// Trials is how many times each case is run and scored;
 		// scores average across trials. Minimum 1.
 		Trials int `mapstructure:"trials" json:"trials"`
+		// SigLevel is the paired-bootstrap significance level the
+		// acceptance gate requires in addition to the mean delta
+		// (p ≤ sig_level). Defaults to 0.05. Significance testing is
+		// automatically disabled below sigMinPairs paired cases —
+		// mean-only gating with a logged warning.
+		SigLevel float64 `mapstructure:"sig_level" json:"sig_level"`
+		// SigSeed seeds the bootstrap resampler so p-values are
+		// reproducible. Defaults to 1.
+		SigSeed int64 `mapstructure:"sig_seed" json:"sig_seed"`
 	} `mapstructure:"thresholds" json:"thresholds"`
 
 	Budget struct {
@@ -70,11 +80,38 @@ type Config struct {
 	// interpretation belongs to the executor's run wrapper.
 	ExecutorProvider string `mapstructure:"executor_provider" json:"executor_provider,omitempty"`
 
+	// ExecutorProviders, when set, sweeps the case × trial matrix once
+	// per provider URI and records per-provider results to the corpus.
+	// The FIRST entry is the primary provider: the gate compares the
+	// candidate against the baseline under it alone (fair A/B); every
+	// other provider's scores are recorded as evidence rows only.
+	// Overrides ExecutorProvider.
+	ExecutorProviders []string `mapstructure:"executor_providers" json:"executor_providers,omitempty"`
+
 	// FixturesDir, when set, is recorded with the promoted candidate's
 	// corpus entry as fixtures.cassette_dir — the operator-configured
 	// location of the recorded environment (adapter-agnostic; the
 	// engine never inspects it).
 	FixturesDir string `mapstructure:"fixtures_dir" json:"fixtures_dir,omitempty"`
+}
+
+// primaryProvider is the provider URI the gate compares under: the
+// first executor_providers entry when sweeping, else the single
+// executor_provider (possibly empty).
+func (c *Config) primaryProvider() string {
+	if len(c.ExecutorProviders) > 0 {
+		return c.ExecutorProviders[0]
+	}
+	return c.ExecutorProvider
+}
+
+// secondaryProviders are the sweep-only providers: everything after the
+// primary. Their scores are recorded as evidence, never gated on.
+func (c *Config) secondaryProviders() []string {
+	if len(c.ExecutorProviders) > 1 {
+		return c.ExecutorProviders[1:]
+	}
+	return nil
 }
 
 // Normalize applies defaults and validates the parts the engine cannot
@@ -95,6 +132,25 @@ func (c *Config) Normalize() error {
 	}
 	if c.ExecutorMode == "" {
 		c.ExecutorMode = "replay"
+	}
+	if c.Thresholds.SigLevel == 0 {
+		c.Thresholds.SigLevel = 0.05
+	}
+	if c.Thresholds.SigLevel < 0 || c.Thresholds.SigLevel > 1 {
+		return fmt.Errorf("config: thresholds.sig_level %v outside (0, 1]", c.Thresholds.SigLevel)
+	}
+	if c.Thresholds.SigSeed == 0 {
+		c.Thresholds.SigSeed = 1
+	}
+	seen := make(map[string]bool, len(c.ExecutorProviders))
+	for _, p := range c.ExecutorProviders {
+		if strings.TrimSpace(p) == "" {
+			return fmt.Errorf("config: executor_providers contains an empty entry")
+		}
+		if seen[p] {
+			return fmt.Errorf("config: executor_providers lists %q twice", p)
+		}
+		seen[p] = true
 	}
 
 	required := map[string][]string{

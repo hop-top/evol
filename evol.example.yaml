@@ -36,6 +36,11 @@ thresholds:
   delta: 0.05
   # Runs per case; scores average across trials.
   trials: 1
+  # Paired-bootstrap significance the gate also requires (p <= sig_level)
+  # when at least 8 paired cases exist; below that floor the gate is
+  # mean-only and says so on stderr. sig_seed makes p reproducible.
+  # sig_level: 0.05
+  # sig_seed: 1
 
 budget:
   generations: 3
@@ -52,6 +57,15 @@ executor_mode: replay
 # for a claude-CLI wrapper; ollama://llama3.2:3b?base_url=http://127.0.0.1:11434
 # targets a local Ollama server.
 # executor_provider: claude://haiku
+
+# Optional: model-dimension sweep. The FIRST entry is the primary
+# provider — the gate compares candidate vs baseline under it alone;
+# every other entry is scored per candidate and recorded to the corpus
+# as evidence rows (verdict "evidence", provider attributed) for
+# routing decisions. Overrides executor_provider.
+# executor_providers:
+#   - claude://haiku
+#   - ollama://llama3.2:3b?base_url=http://127.0.0.1:11500
 
 # Optional: recorded-environment location (e.g. the executor's cassette
 # root). When set, the promoted candidate's corpus record carries it as
