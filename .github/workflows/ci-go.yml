@@ -44,11 +44,10 @@ jobs:
       # <<< kit-managed: toolchain <<<
 
       - name: Run tests
-        # -race requires cgo; override the repo-wide CGO_ENABLED=0 (mise.toml)
-        # for the race-instrumented test run only. Release builds stay cgo-free.
-        env:
-          CGO_ENABLED: "1"
-        run: mise exec -- go test -race -coverprofile=coverage.out ./...
+        # -race requires cgo. mise.toml pins CGO_ENABLED=0 and `mise exec`
+        # re-applies it over job env, so the override must run INSIDE the
+        # mise environment. Release builds stay cgo-free via goreleaser.
+        run: mise exec -- env CGO_ENABLED=1 go test -race -coverprofile=coverage.out ./...
 
       - name: Upload coverage
         uses: actions/upload-artifact@v4
