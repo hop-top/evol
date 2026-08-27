@@ -92,20 +92,26 @@ Headroom is real (+0.275 for exactly the content a good candidate would
 add), floor is not zero, and single-trial variance is ±0.1 — use ≥2
 trials when judging runs.
 
-## Scorer note (observed at scaffold time)
+## Scorer note
 
-The default scorer is `e2e/bin/score-commit.py` — stdlib fallback
-mirroring `e2e/contracts/commit-subject.yaml` (same five checks).
+The eva-backed scorer (`e2e/bin/scorer-eva`) is live as of the judge-wiring
+landing: the installed eva exposes standalone contract mode
+(`eva run --contract <yaml> --input - --format json`), which is what the
+adapter shells. Verified end-to-end — a conforming subject scores 1.0, a
+non-conforming one 0.5 with the failing evaluator named in the reason.
 
-The eva-backed adapter (`e2e/bin/scorer-eva`) requires an eva build with
-standalone contract mode (`eva run --contract <yaml> --input - --format
-json`). The eva 0.1.0a1 build installed here predates it: `eva run` only
-accepts `--dataset/--target` and exits 2 with a usage error on both
-streams (observed). `eva contract validate` works and the committed
-contract passes it. Once a newer eva is installed: verify
-`eva run --help` lists `--contract/--input`, then swap the scorer cmd in
-`e2e/evol.yaml` to `[e2e/bin/scorer-eva]` and
-`export EVOL_EVA_CONTRACT=e2e/contracts/commit-subject.yaml`.
+To use it instead of the stdlib fallback scorer, set the contract and swap
+the scorer cmd in `e2e/evol.yaml`:
+
+```sh
+export EVOL_EVA_CONTRACT=e2e/contracts/commit-subject.yaml
+# e2e/evol.yaml:  scorer.cmd: ["e2e/bin/scorer-eva"]
+```
+
+The stdlib fallback (`e2e/bin/score-commit.py`) remains the default because it
+carries the per-case `checks` logic the house-rule eval depends on; the eva
+contract covers the subject-shape subset. Contracts with LLM-judge evaluators
+now work too — the judge tier is wired in the installed build.
 
 ## Executor note
 
