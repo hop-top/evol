@@ -3,10 +3,10 @@
 # Docs: https://mise.jdx.dev
 
 [tools]
-go = "1.26.6"
+go = "1.27.3"
 # Pin minor version so local + CI agree on enabled linters and
 # formatter rules. Bump in lockstep with CI.
-golangci-lint = "2.12.2"
+golangci-lint = "2.14.0"
 
 [env]
 CGO_ENABLED = "0"
