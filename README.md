@@ -4,6 +4,8 @@
 [![12-factor AI-CLI](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/hop-top/evol/main/.12fc.json)](https://github.com/hop-top/evol/blob/main/.12fc.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+> **Status:** Active development. Usable today, with some rough edges as features evolve.
+
 **evol rewrites the skill files, prompts, and configs your agent works
 from — and proves, statistically, whether the rewrite was actually
 better.**
@@ -84,7 +86,7 @@ Three things a researcher is usually choosing between:
 | **Deterministic replay** | no | no | rare | **cassettes, zero-key CI gate** |
 | **Extensible without a fork** | n/a | Python | Python | **any language, JSON/stdio** |
 | **Operates on your existing files** | yes | signatures/programs | `SKILL.md` | **skill, prompt, command, tool-config** |
-| **Maturity** | — | production | early | **pre-alpha code, published spec** |
+| **Maturity** | — | production | early | **active development, published spec** |
 
 **Optimizers and evol are not rivals.** DSPy optimizes; evol decides
 whether the result earned promotion. An optimizer drops in as a
@@ -113,8 +115,8 @@ way to score its output — programmatically or by rubric.
   cases synthesized from the artifact alone reward that artifact's own
   blind spots. Synthesis requires knowledge grounding, and its output
   stays quarantined until a human promotes it.
-- **You need something battle-tested today.** evol is experimental —
-  pre-alpha code under a published spec; flags, layouts, and defaults
+- **You need something battle-tested today.** evol is in active
+  development under a published spec; flags, layouts, and defaults
   still move between commits.
 
 ---
@@ -371,11 +373,11 @@ evidence. See [docs/self-scheduling.md](docs/self-scheduling.md).
 
 ## Status and limitations
 
-**Pre-alpha code, published spec.** The port contracts in [spec/](spec/)
+**Active development, published spec.** The port contracts in [spec/](spec/)
 are published v1 (`evol: "1"`, additive-only — the commitment is in
 [spec/publishing.md](spec/publishing.md)), released only after the loop
 demonstrated the verified improvement above. The CLI and reference
-adapters remain pre-alpha: flags and layouts may change.
+adapters are still moving: flags and layouts may change.
 
 - **No packaged release.** Install is from source
   ([`scripts/install.sh`](scripts/install.sh) or `make quickstart`);
